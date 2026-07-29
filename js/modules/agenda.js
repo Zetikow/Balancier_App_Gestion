@@ -27,7 +27,7 @@ function renderScorencoWidget(equipe) {
   return `<div class="card scorenco-widget-todo">
     <div class="section-h" style="margin-bottom:6px;">Calendrier officiel FFHB — ${equipe}</div>
     <div class="muted" style="font-size:11px; line-height:1.5;">
-      À configurer : demande au club s'il existe déjà un compte <b style="color:#fff;">scorenco.com</b>, sinon crée-en un (gratuit), puis crée un widget "Équipe" pour ${equipe} et donne-moi son identifiant (<code style="color:#5a8fe8;">data-widget-id</code>) pour le coller dans <code style="color:#5a8fe8;">SCORENCO_WIDGET_IDS</code>.
+      À configurer : demande au club s'il existe déjà un compte <b style="color:#fff;">scorenco.com</b>, sinon crée-en un (gratuit), puis crée un widget "Équipe" pour ${equipe} et donne-moi son identifiant (<code style="color:#cdd6e3;">data-widget-id</code>) pour le coller dans <code style="color:#cdd6e3;">SCORENCO_WIDGET_IDS</code>.
     </div>
   </div>`;
 }
