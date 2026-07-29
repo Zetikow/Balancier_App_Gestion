@@ -25,6 +25,13 @@ function demoDateStr(offsetDays) {
   return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd");
 }
 
+// Rosters fictifs partagés entre les sous-fonctions seedDemoXxx ci-dessous (comptes, présences,
+// caisse noire, compositions, gestion des matchs...) pour que toutes les pages utilisent le même
+// effectif complet plutôt que des sous-listes partielles.
+const DEMO_U17_ROSTER = ["Adrien (fictif)","Bastien (fictif)","Clément (fictif)","Dylan (fictif)","Étienne (fictif)","Florian (fictif)","Guillaume (fictif)","Hadrien (fictif)","Igor (fictif)","Jules (fictif)","Kylian (fictif)","Lucas (fictif)","Mathis (fictif)","Nathan (fictif)","Olivier (fictif)","Pierre (fictif)","Raphaël (fictif)","Sacha (fictif)","Thibault (fictif)","Valentin (fictif)"];
+const DEMO_U13_ENFANTS = ["Adam (fictif)","Bilal (fictif)","Corentin (fictif)","Diego (fictif)","Eliott (fictif)","Félix (fictif)","Gabin (fictif)","Hippolyte (fictif)","Isaac (fictif)","Jérémy (fictif)","Killian (fictif)","Léandre (fictif)","Mattéo (fictif)","Nino (fictif)","Owen (fictif)","Prosper (fictif)","Ruben (fictif)","Swann (fictif)","Timéo (fictif)","Ulysse (fictif)"];
+const DEMO_U13_PARENTS = ["Aurélie (fictif)","Benoît (fictif)","Camille (fictif)","Delphine (fictif)","Emmanuel (fictif)","Fanny (fictif)","Grégory (fictif)","Hélène (fictif)","Isabelle (fictif)","Julien (fictif)","Karine (fictif)","Ludovic (fictif)","Mélanie (fictif)","Nicolas (fictif)","Odile (fictif)","Patrick (fictif)","Sandrine (fictif)","Thomas (fictif)","Valérie (fictif)","Yannick (fictif)"];
+
 // ===================== COMPTES =====================
 // U13M1 : un compte "Joueur" par enfant (pour le roster/présence) mais qui ne se connecte
 // jamais — c'est le compte "Parent" séparé qui sert réellement à se connecter et à répondre
@@ -36,9 +43,9 @@ function seedDemoComptes() {
   const data = sheet.getDataRange().getValues();
   const existants = new Set(data.slice(1).map(r => String(r[COL_NOM]).trim()));
 
-  const u17 = ["Adrien (fictif)","Bastien (fictif)","Clément (fictif)","Dylan (fictif)","Étienne (fictif)","Florian (fictif)","Guillaume (fictif)","Hadrien (fictif)","Igor (fictif)","Jules (fictif)","Kylian (fictif)","Lucas (fictif)","Mathis (fictif)","Nathan (fictif)","Olivier (fictif)","Pierre (fictif)","Raphaël (fictif)","Sacha (fictif)","Thibault (fictif)","Valentin (fictif)"];
-  const u13Enfants = ["Adam (fictif)","Bilal (fictif)","Corentin (fictif)","Diego (fictif)","Eliott (fictif)","Félix (fictif)","Gabin (fictif)","Hippolyte (fictif)","Isaac (fictif)","Jérémy (fictif)","Killian (fictif)","Léandre (fictif)","Mattéo (fictif)","Nino (fictif)","Owen (fictif)","Prosper (fictif)","Ruben (fictif)","Swann (fictif)","Timéo (fictif)","Ulysse (fictif)"];
-  const u13Parents = ["Aurélie (fictif)","Benoît (fictif)","Camille (fictif)","Delphine (fictif)","Emmanuel (fictif)","Fanny (fictif)","Grégory (fictif)","Hélène (fictif)","Isabelle (fictif)","Julien (fictif)","Karine (fictif)","Ludovic (fictif)","Mélanie (fictif)","Nicolas (fictif)","Odile (fictif)","Patrick (fictif)","Sandrine (fictif)","Thomas (fictif)","Valérie (fictif)","Yannick (fictif)"];
+  const u17 = DEMO_U17_ROSTER;
+  const u13Enfants = DEMO_U13_ENFANTS;
+  const u13Parents = DEMO_U13_PARENTS;
 
   const rows = [];
   // SM1 : PLAYERS (Config.gs) sont déjà les 20 joueurs SM1 — ajoutés ici aussi par sécurité
@@ -142,19 +149,22 @@ function seedDemoPresences(events) {
   if (data.length > 1) { Logger.log("Présences déjà renseignées — rien fait."); return; }
 
   const rosterByTeam = {
-    SM1: PLAYERS.slice(0, 12),
-    U17M1: ["Adrien (fictif)","Bastien (fictif)","Clément (fictif)","Dylan (fictif)","Étienne (fictif)","Florian (fictif)","Guillaume (fictif)","Hadrien (fictif)","Igor (fictif)","Jules (fictif)","Kylian (fictif)","Lucas (fictif)"],
-    U13M1: ["Adam (fictif)","Bilal (fictif)","Corentin (fictif)","Diego (fictif)","Eliott (fictif)","Félix (fictif)","Gabin (fictif)","Hippolyte (fictif)","Isaac (fictif)","Jérémy (fictif)"],
+    SM1: PLAYERS,
+    U17M1: DEMO_U17_ROSTER,
+    U13M1: DEMO_U13_ENFANTS,
   };
+  const excuses = ["Blessure", "Raisons professionnelles", "École", "Vacances", "Rendez-vous médical"];
 
   const rows = [];
   events.forEach(ev => {
     // Les entraînements/matchs trop loin dans le futur n'ont pas encore de réponse — plus réaliste.
-    if (!ev.isPast && ev.offset > 5) return;
+    if (!ev.isPast && ev.offset > 10) return;
     const roster = rosterByTeam[ev.equipe] || [];
     roster.forEach((nom, i) => {
-      const present = (i % 6 === 5) ? "Non" : "Oui"; // un peu de variété (absences ponctuelles)
-      rows.push([ev.id, nom, present, ""]);
+      const absent = i % 6 === 5; // un peu de variété (absences ponctuelles)
+      const present = absent ? "Non" : "Oui";
+      const justif = absent && ev.isPast && i % 2 === 0 ? excuses[i % excuses.length] : "";
+      rows.push([ev.id, nom, present, justif]);
     });
   });
   rows.forEach(r => sheet.appendRow(r));
@@ -183,6 +193,19 @@ function seedDemoCaisseNoire() {
     [PLAYERS[4], "Meilleure action du match", 3],
     [PLAYERS[5], "Retard entraînement", 1],
     [PLAYERS[6], "Taxer de l'eau", 5],
+    [PLAYERS[7], "Oubli de vêtement entraînement", 2],
+    [PLAYERS[8], "Retard entraînement", 3],
+    [PLAYERS[9], "participation mensuelle", 4],
+    [PLAYERS[10], "2min pour avoir râler", 2],
+    [PLAYERS[11], "Meilleure action du match", 1],
+    [PLAYERS[12], "Retard entraînement", 1],
+    [PLAYERS[13], "Oubli de vêtement match", 1],
+    [PLAYERS[14], "Taxer de l'eau", 2],
+    [PLAYERS[15], "participation mensuelle", 4],
+    [PLAYERS[16], "Retard entraînement", 2],
+    [PLAYERS[17], "Pire action du match (+ déguisement)", 1],
+    [PLAYERS[18], "Oubli de vêtement entraînement", 1],
+    [PLAYERS[19], "Nom dans le journal", 1],
   ];
   let ecrites = 0;
   demoEntries.forEach(([nom, action, val]) => {
@@ -200,27 +223,36 @@ function seedDemoSelectionsAndCompositions(events) {
 
   const selSheet = ss.getSheetByName("Selections");
   if (selSheet && selSheet.getDataRange().getValues().length <= 1) {
-    const sm1Match = events.find(e => e.equipe === "SM1" && e.type === "Match" && e.isPast);
-    if (sm1Match) {
-      PLAYERS.slice(0, 12).forEach(nom => selSheet.appendRow([sm1Match.id, nom, "Oui"]));
-      Logger.log("Sélection SM1 de démonstration créée.");
-    }
+    const sm1Matches = events.filter(e => e.equipe === "SM1" && e.type === "Match");
+    let count = 0;
+    sm1Matches.forEach((match, mi) => {
+      // Un roulement différent à chaque match pour plus de réalisme (12-14 retenus sur 20).
+      const start = (mi * 5) % PLAYERS.length;
+      const retenus = [];
+      for (let i = 0; i < 13; i++) retenus.push(PLAYERS[(start + i) % PLAYERS.length]);
+      retenus.forEach(nom => { selSheet.appendRow([match.id, nom, "Oui"]); count++; });
+    });
+    if (count) Logger.log(count + " sélection(s) SM1 de démonstration créée(s) sur " + sm1Matches.length + " match(s).");
   }
 
   const compoSheet = ss.getSheetByName("Compositions");
   const compoMetaSheet = ss.getSheetByName("CompositionsMeta");
   if (compoSheet && compoMetaSheet && compoSheet.getDataRange().getValues().length <= 1) {
-    const u17Match = events.find(e => e.equipe === "U17M1" && e.type === "Match" && e.isPast);
-    if (u17Match) {
-      const slots = [
-        ["GB", "Adrien (fictif)"], ["AiG", "Bastien (fictif)"], ["AiD", "Clément (fictif)"],
-        ["PV", "Dylan (fictif)"], ["ArG", "Étienne (fictif)"], ["ArD", "Florian (fictif)"], ["DC", "Guillaume (fictif)"],
-        ["Banc1", "Hadrien (fictif)"], ["Banc2", "Igor (fictif)"], ["Banc3", "Jules (fictif)"], ["Banc4", "Kylian (fictif)"], ["Banc5", "Lucas (fictif)"],
-      ];
-      slots.forEach(([zone, nom]) => compoSheet.appendRow([u17Match.id, nom, zone, "", ""]));
-      compoMetaSheet.appendRow([u17Match.id, "1"]);
-      Logger.log("Composition U17M1 de démonstration créée et publiée.");
-    }
+    const u17Matches = events.filter(e => e.equipe === "U17M1" && e.type === "Match");
+    const zones = ["GB", "AiG", "AiD", "PV", "ArG", "ArD", "DC", "Banc1", "Banc2", "Banc3", "Banc4", "Banc5"];
+    let count = 0;
+    u17Matches.forEach((match, mi) => {
+      const start = (mi * 3) % DEMO_U17_ROSTER.length;
+      zones.forEach((zone, i) => {
+        const nom = DEMO_U17_ROSTER[(start + i) % DEMO_U17_ROSTER.length];
+        compoSheet.appendRow([match.id, nom, zone, "", ""]);
+        count++;
+      });
+      // Seuls les matchs déjà joués (ou le prochain à domicile) sont publiés — un match encore
+      // loin dans le futur reste "en préparation" côté coach, plus réaliste.
+      if (match.isPast || match.isHome) compoMetaSheet.appendRow([match.id, "1"]);
+    });
+    if (count) Logger.log(count + " place(s) de composition U17M1 de démonstration créée(s) sur " + u17Matches.length + " match(s).");
   }
 }
 
@@ -232,22 +264,43 @@ function seedDemoCartes(events) {
   if (!cartesSheet || !reponsesSheet) return;
   if (cartesSheet.getDataRange().getValues().length > 1) { Logger.log("Cartes déjà présentes — rien fait."); return; }
 
-  const sm1HomeMatch = events.find(e => e.equipe === "SM1" && e.type === "Match" && !e.isPast && e.isHome);
-  if (!sm1HomeMatch) return;
+  const sm1HomeMatchFuture = events.find(e => e.equipe === "SM1" && e.type === "Match" && !e.isPast && e.isHome);
+  const sm1HomeMatchPast = events.find(e => e.equipe === "SM1" && e.type === "Match" && e.isPast && e.isHome);
+  let cartes = 0;
 
-  const repasId = Utilities.getUuid();
-  cartesSheet.appendRow([repasId, sm1HomeMatch.id, "repas", "Repas d'après match", JSON.stringify(["Restaurant Le Jura", "Pizzeria du Balancier"]), "180"]);
-  reponsesSheet.appendRow([repasId, PLAYERS[0], "vote", "Restaurant Le Jura"]);
-  reponsesSheet.appendRow([repasId, PLAYERS[1], "vote", "Restaurant Le Jura"]);
-  reponsesSheet.appendRow([repasId, PLAYERS[2], "participe", "Oui"]);
+  if (sm1HomeMatchFuture) {
+    const repasId = Utilities.getUuid();
+    cartesSheet.appendRow([repasId, sm1HomeMatchFuture.id, "repas", "Repas d'après match", JSON.stringify(["Restaurant Le Jura", "Pizzeria du Balancier", "Auberge du Lac"]), "180"]);
+    reponsesSheet.appendRow([repasId, PLAYERS[0], "vote", "Restaurant Le Jura"]);
+    reponsesSheet.appendRow([repasId, PLAYERS[1], "vote", "Restaurant Le Jura"]);
+    reponsesSheet.appendRow([repasId, PLAYERS[2], "vote", "Pizzeria du Balancier"]);
+    reponsesSheet.appendRow([repasId, PLAYERS[3], "vote", "Auberge du Lac"]);
+    reponsesSheet.appendRow([repasId, PLAYERS[0], "participe", "Oui"]);
+    reponsesSheet.appendRow([repasId, PLAYERS[1], "participe", "Oui"]);
+    reponsesSheet.appendRow([repasId, PLAYERS[2], "participe", "Oui"]);
+    reponsesSheet.appendRow([repasId, PLAYERS[5], "participe", "Non"]);
 
-  const aperoId = Utilities.getUuid();
-  cartesSheet.appendRow([aperoId, sm1HomeMatch.id, "apero", "Apéro d'avant match", JSON.stringify(["Coca", "Chips", "Jus d'orange"]), ""]);
-  reponsesSheet.appendRow([aperoId, PLAYERS[3], "item:Coca", "Oui"]);
-  reponsesSheet.appendRow([aperoId, PLAYERS[3], "item:Chips", "Oui"]);
-  reponsesSheet.appendRow([aperoId, PLAYERS[4], "item:Jus d'orange", "Oui"]);
+    const aperoId = Utilities.getUuid();
+    cartesSheet.appendRow([aperoId, sm1HomeMatchFuture.id, "apero", "Apéro d'avant match", JSON.stringify(["Coca", "Chips", "Jus d'orange", "Cacahuètes"]), ""]);
+    reponsesSheet.appendRow([aperoId, PLAYERS[3], "item:Coca", "Oui"]);
+    reponsesSheet.appendRow([aperoId, PLAYERS[3], "item:Chips", "Oui"]);
+    reponsesSheet.appendRow([aperoId, PLAYERS[4], "item:Jus d'orange", "Oui"]);
+    reponsesSheet.appendRow([aperoId, PLAYERS[6], "item:Cacahuètes", "Oui"]);
+    cartes += 2;
+  }
 
-  Logger.log("Cartes d'événement de démonstration créées.");
+  if (sm1HomeMatchPast) {
+    const repasPastId = Utilities.getUuid();
+    cartesSheet.appendRow([repasPastId, sm1HomeMatchPast.id, "repas", "Repas d'après match", JSON.stringify(["Restaurant Le Jura", "Pizzeria du Balancier"]), "150"]);
+    reponsesSheet.appendRow([repasPastId, PLAYERS[7], "vote", "Pizzeria du Balancier"]);
+    reponsesSheet.appendRow([repasPastId, PLAYERS[8], "vote", "Restaurant Le Jura"]);
+    reponsesSheet.appendRow([repasPastId, PLAYERS[7], "participe", "Oui"]);
+    reponsesSheet.appendRow([repasPastId, PLAYERS[8], "participe", "Oui"]);
+    reponsesSheet.appendRow([repasPastId, PLAYERS[9], "participe", "Oui"]);
+    cartes += 1;
+  }
+
+  Logger.log(cartes + " carte(s) d'événement de démonstration créée(s).");
 }
 
 // ===================== GESTION DES MATCHS (U17M1/U13M1) =====================
@@ -259,26 +312,50 @@ function seedDemoGestionMatchs(events) {
   const covoitSheet = ss.getSheetByName("Covoiturage");
   const ftSheet = ss.getSheetByName("Foodtrucks");
 
-  const u17Home = events.find(e => e.equipe === "U17M1" && e.type === "Match" && !e.isPast && e.isHome);
-  const u13Away = events.find(e => e.equipe === "U13M1" && e.type === "Match" && !e.isPast && !e.isHome);
-  const anyHomeMatch = events.find(e => e.equipe !== "SM1" && e.type === "Match" && e.isHome);
+  // Domicile (U17M1/U13M1 uniquement — le SM1 utilise les Cartes repas/apéro à la place) :
+  // goûter, table de marque, maillots et foodtrucks se préparent match par match.
+  const homeMatches = events.filter(e => e.equipe !== "SM1" && e.type === "Match" && e.isHome);
+  // Extérieur : covoiturage à organiser pour chaque déplacement.
+  const awayMatches = events.filter(e => e.equipe !== "SM1" && e.type === "Match" && !e.isHome);
 
-  if (gouterSheet && u17Home && gouterSheet.getDataRange().getValues().length <= 1) {
-    gouterSheet.appendRow([u17Home.id, "Adrien (fictif)", "Gâteaux"]);
-    gouterSheet.appendRow([u17Home.id, "Bastien (fictif)", "Boissons"]);
-  }
-  if (tmSheet && u17Home && tmSheet.getDataRange().getValues().length <= 1) {
-    tmSheet.appendRow([u17Home.id, "Clément (fictif)", "Oui"]);
-  }
-  if (maillotsSheet && u17Home && maillotsSheet.getDataRange().getValues().length <= 1) {
-    maillotsSheet.appendRow([u17Home.id, "Dylan (fictif)", "Oui"]);
-  }
-  if (covoitSheet && u13Away && covoitSheet.getDataRange().getValues().length <= 1) {
-    covoitSheet.appendRow([u13Away.id, "Aurélie (fictif)", "Oui", "4", ""]);
-    covoitSheet.appendRow([u13Away.id, "Benoît (fictif)", "", "", "Oui"]);
-  }
-  if (ftSheet && anyHomeMatch && ftSheet.getDataRange().getValues().length <= 1) {
-    ftSheet.appendRow([Utilities.getUuid(), anyHomeMatch.id, "Chez Momo — Crêpes", "4€ la crêpe", "65", "Bien venu, à refaire"]);
-  }
-  Logger.log("Données Gestion des matchs de démonstration créées.");
+  const foodtrucksNoms = ["Chez Momo — Crêpes", "Le Camion à Frites", "Pizza'Roule"];
+
+  let gouterN = 0, tmN = 0, maillotsN = 0, ftN = 0, covoitN = 0;
+
+  homeMatches.forEach((match, mi) => {
+    const roster = match.equipe === "U17M1" ? DEMO_U17_ROSTER : DEMO_U13_PARENTS;
+    const a = roster[(mi * 2) % roster.length], b = roster[(mi * 2 + 1) % roster.length], c = roster[(mi * 2 + 2) % roster.length];
+
+    if (gouterSheet && gouterSheet.getDataRange().getValues().length <= 1 + gouterN) {
+      gouterSheet.appendRow([match.id, a, "Gâteaux"]);
+      gouterSheet.appendRow([match.id, b, "Boissons"]);
+      gouterN += 2;
+    }
+    if (tmSheet && tmSheet.getDataRange().getValues().length <= 1 + tmN) {
+      tmSheet.appendRow([match.id, c, "Oui"]);
+      tmN += 1;
+    }
+    if (maillotsSheet && maillotsSheet.getDataRange().getValues().length <= 1 + maillotsN) {
+      maillotsSheet.appendRow([match.id, a, "Oui"]);
+      maillotsN += 1;
+    }
+    if (ftSheet && ftSheet.getDataRange().getValues().length <= 1 + ftN) {
+      ftSheet.appendRow([Utilities.getUuid(), match.id, foodtrucksNoms[mi % foodtrucksNoms.length], "4€ la part", 65 + mi * 10, "Bien venu, à refaire"]);
+      ftN += 1;
+    }
+  });
+
+  awayMatches.forEach((match, mi) => {
+    if (!covoitSheet || covoitSheet.getDataRange().getValues().length > 1 + covoitN) return;
+    const roster = match.equipe === "U17M1" ? DEMO_U17_ROSTER : DEMO_U13_PARENTS;
+    const conducteur = roster[(mi * 3) % roster.length];
+    const passager = roster[(mi * 3 + 1) % roster.length];
+    const chercheur = roster[(mi * 3 + 2) % roster.length];
+    covoitSheet.appendRow([match.id, conducteur, "Oui", "4", ""]);
+    covoitSheet.appendRow([match.id, passager, "Oui", "3", ""]);
+    covoitSheet.appendRow([match.id, chercheur, "", "", "Oui"]);
+    covoitN += 3;
+  });
+
+  Logger.log(`Données Gestion des matchs de démonstration créées (${homeMatches.length} match(s) à domicile, ${awayMatches.length} déplacement(s)).`);
 }
