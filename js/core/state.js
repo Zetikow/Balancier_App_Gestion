@@ -101,6 +101,7 @@ let currentPage = "home";
 let isOnline = false;
 let loginError = "";
 let loginNeedsSetup = null; // null = pas encore vérifié, true/false ensuite
+let loginCodeLength = 4; // 4 pour tous les rôles, 6 pour l'Admin (voir requiredCodeLength côté Apps Script)
 let loginSelectedNom = localStorage.getItem(LAST_USER_KEY) || "";
 let loginPrefilledFromMemory = !!loginSelectedNom;
 let loginNoms = null; // [{nom, role}, ...] chargé avant connexion, remplace la liste figée PLAYERS pour le menu

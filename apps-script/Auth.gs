@@ -153,6 +153,17 @@ function hasRole(roles, roleName) {
   return !!roles && roles.indexOf(roleName) !== -1;
 }
 
+// L'Admin a un code à 6 chiffres (accès plus sensible), tous les autres rôles restent à 4.
+// Utilisé aux deux endroits où un code est choisi/changé : api_setCode (première connexion,
+// où le rôle n'est pas encore authentifié donc lu directement depuis la ligne Comptes) et
+// api_changeCode (où le rôle est déjà connu via checkAuth).
+function requiredCodeLength(isAdmin) {
+  return isAdmin ? 6 : 4;
+}
+function rolesCellHasAdmin(rolesCell) {
+  return parseRoles(rolesCell).some(r => r.role === "Admin");
+}
+
 // Renvoie la liste des équipes où la personne a le rôle donné (ex: hasRole+équipes pour "Coach").
 function equipesForRole(ss, nom, code, roleName) {
   const details = getSessionRoleDetails(ss, nom, code);
@@ -176,7 +187,8 @@ function api_accountStatus(ss, e) {
   for (let i = 1; i < comptes.length; i++) {
     if (comptes[i][COL_NOM] === nom) {
       const codeVide = !comptes[i][COL_CODE] || String(comptes[i][COL_CODE]).trim() === "";
-      return jsonOut({ ok: true, needsSetup: codeVide });
+      const codeLength = requiredCodeLength(rolesCellHasAdmin(comptes[i][COL_ROLES]));
+      return jsonOut({ ok: true, needsSetup: codeVide, codeLength });
     }
   }
   return jsonOut({ ok: false });
@@ -188,7 +200,8 @@ function api_changeCode(ss, e) {
   const role = checkAuth(ss, nom, oldCode);
   if (!role) return jsonOut({ ok: false, error: "auth" });
   const newCode = String(e.parameter.newCode || "");
-  if (!/^\d{4}$/.test(newCode)) return jsonOut({ ok: false, error: "format" });
+  const expectedLength = requiredCodeLength(hasRole(role, "Admin"));
+  if (!new RegExp(`^\\d{${expectedLength}}$`).test(newCode)) return jsonOut({ ok: false, error: "format", codeLength: expectedLength });
   const sheet = ss.getSheetByName("Comptes");
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
@@ -204,12 +217,13 @@ function api_changeCode(ss, e) {
 function api_setCode(ss, e) {
   const nom = e.parameter.nom;
   const newCode = String(e.parameter.newCode || "");
-  if (!/^\d{4}$/.test(newCode)) return jsonOut({ ok: false, error: "format" });
   const sheet = ss.getSheetByName("Comptes");
   ensureComptesSchema(sheet);
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     if (data[i][COL_NOM] === nom) {
+      const expectedLength = requiredCodeLength(rolesCellHasAdmin(data[i][COL_ROLES]));
+      if (!new RegExp(`^\\d{${expectedLength}}$`).test(newCode)) return jsonOut({ ok: false, error: "format", codeLength: expectedLength });
       const codeVide = !data[i][COL_CODE] || String(data[i][COL_CODE]).trim() === "";
       if (!codeVide) return jsonOut({ ok: false, error: "already_set" });
       sheet.getRange(i + 1, COL_CODE + 1).setNumberFormat("@");

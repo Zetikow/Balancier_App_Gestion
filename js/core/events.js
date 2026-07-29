@@ -135,8 +135,9 @@ function attachCoreNavEvents() {
     const oldCode = document.getElementById("cc-old").value;
     const n1 = document.getElementById("cc-new1").value;
     const n2 = document.getElementById("cc-new2").value;
-    if (!/^\d{4}$/.test(n1) || n1 !== n2) {
-      window.__changeCodeError = "Les nouveaux codes ne correspondent pas ou ne sont pas valides (4 chiffres).";
+    const ccLen = hasRole("Admin") ? 6 : 4;
+    if (!new RegExp(`^\\d{${ccLen}}$`).test(n1) || n1 !== n2) {
+      window.__changeCodeError = `Les nouveaux codes ne correspondent pas ou ne sont pas valides (${ccLen} chiffres).`;
       render();
       return;
     }

@@ -8,6 +8,10 @@
   --red-accent: #b6303a;
   --grad: linear-gradient(135deg, #0d1b33 0%, #4275d4 55%, #eef2fa 100%);
   --glow: radial-gradient(circle, rgba(66,117,212,0.35), transparent 70%);
+  /* Dégradé propre à la page de connexion : reprend le vert forêt + or du logo/blason plutôt
+     que le bleu fonctionnel du reste de l'appli (celui-ci reste inchangé partout ailleurs). */
+  --login-grad: linear-gradient(135deg, #12200f 0%, #e0a639 60%, #f5ecd8 100%);
+  --login-glow: radial-gradient(circle, rgba(224,166,57,0.4), transparent 70%);
   --font-disp: 'DM Sans', sans-serif;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -152,24 +156,24 @@ tr.total-row td { font-weight: 800; background: #1a1710; color: #ffd23f; }
   background-position: center top;
   background-repeat: no-repeat;
 }
-.login-card-outer { border-radius: 26px; padding: 2px; background: var(--grad); width: 100%; }
+.login-card-outer { border-radius: 26px; padding: 2px; background: var(--login-grad); width: 100%; }
 @media (min-width: 700px) {
   .login-card-outer { max-width: 360px; }
 }
-.login-card { background: #11141fee; backdrop-filter: blur(6px); border: 1px solid rgba(47,107,255,0.28); border-radius: 24px; padding: 36px 26px; text-align: center; position: relative; overflow: hidden; }
-.login-suggestions { display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: #181d2e; border: 1px solid rgba(47,107,255,0.35); border-radius: 12px; max-height: 220px; overflow-y: auto; z-index: 50; text-align: left; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+.login-card { background: #11141fee; backdrop-filter: blur(6px); border: 1px solid rgba(205,214,227,0.22); border-radius: 24px; padding: 36px 26px; text-align: center; position: relative; overflow: hidden; }
+.login-suggestions { display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: #181d2e; border: 1px solid rgba(224,166,57,0.35); border-radius: 12px; max-height: 220px; overflow-y: auto; z-index: 50; text-align: left; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
 .login-suggestion-item { padding: 11px 14px; font-size: 13px; font-weight: 600; color: #e8e8ee; border-bottom: 1px solid rgba(255,255,255,0.06); }
 .login-suggestion-item:last-child { border-bottom: none; }
 .ptr-indicator { position: fixed; top: 6px; left: 50%; transform: translateX(-50%) translateY(0px); z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.15s linear; }
 .ptr-spinner { width: 30px; height: 30px; border-radius: 50%; border: 3px solid rgba(90,143,232,0.25); border-top-color: #5a8fe8; background: rgba(17,20,31,0.85); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
 .ptr-indicator.ptr-spinning .ptr-spinner { animation: ptrspin 0.7s linear infinite; }
 @keyframes ptrspin { to { transform: rotate(360deg); } }
-.login-suggestion-item:active { background: rgba(47,107,255,0.18); }
-.login-card .login-glow { position: absolute; top: -60px; right: -60px; width: 220px; height: 220px; background: var(--glow); }
-.login-card img { height: 168px; margin-bottom: 16px; border-radius: 30px; position: relative; box-shadow: 0 10px 40px rgba(47,107,255,0.35); }
+.login-suggestion-item:active { background: rgba(224,166,57,0.18); }
+.login-card .login-glow { position: absolute; top: -60px; right: -60px; width: 220px; height: 220px; background: var(--login-glow); }
+.login-card img { height: 168px; margin-bottom: 16px; border-radius: 30px; position: relative; box-shadow: 0 10px 40px rgba(224,166,57,0.3), 0 0 0 1px rgba(205,214,227,0.4); }
 .login-card .login-title { font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -0.6px; margin-bottom: 6px; position: relative; }
 .login-card .login-subtitle { font-size: 13px; color: #e4e8f2; text-transform: uppercase; letter-spacing: 1.4px; font-weight: 700; margin-bottom: 10px; position: relative; }
-.login-error { color: #ff5a5a; font-size: 13px; margin-top: 10px; font-weight: 600; }
+.login-error { color: var(--red-accent); font-size: 13px; margin-top: 10px; font-weight: 600; }
 .login-card .field-label { font-size: 13px; }
 .login-card select, .login-card input { font-size: 17px; padding: 13px; }
 .field-label { display: block; text-align: left; margin: 12px 0 5px; font-size: 11px; color: #e4e8f2; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }

@@ -19,8 +19,10 @@ async function checkAccountStatus(nom) {
     const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=accountStatus&nom=${encodeURIComponent(nom)}`);
     const data = await res.json();
     loginNeedsSetup = data.ok ? data.needsSetup : false;
+    loginCodeLength = (data.ok && data.codeLength) ? data.codeLength : 4;
   } catch (err) {
     loginNeedsSetup = false;
+    loginCodeLength = 6;
   }
   render();
 }
@@ -41,7 +43,7 @@ async function setInitialCode(nom, newCode) {
       loginNeedsSetup = false;
       render();
     } else {
-      loginError = "Le code doit comporter exactement 4 chiffres.";
+      loginError = `Le code doit comporter exactement ${data.codeLength || loginCodeLength} chiffres.`;
       render();
     }
   } catch (err) {
@@ -83,7 +85,7 @@ async function changeCodeApi(oldCode, newCode) {
       alert("Code modifié avec succès.");
       render();
     } else {
-      window.__changeCodeError = data.error === "auth" ? "Code actuel incorrect." : "Le nouveau code doit comporter 4 chiffres.";
+      window.__changeCodeError = data.error === "auth" ? "Code actuel incorrect." : `Le nouveau code doit comporter ${data.codeLength || (hasRole("Admin") ? 6 : 4)} chiffres.`;
       render();
     }
   } catch (err) {
@@ -94,19 +96,20 @@ async function changeCodeApi(oldCode, newCode) {
 
 function renderLogin() {
   let formHtml = "";
+  const codeDots = "•".repeat(loginCodeLength);
   if (loginSelectedNom && loginNeedsSetup === true) {
     formHtml = `
       <div class="muted" style="margin-top:10px;">Première connexion pour <b>${loginSelectedNom}</b> : choisis ton code.</div>
-      <label class="field-label">Nouveau code (4 chiffres)</label>
-      <input id="login-newcode" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+      <label class="field-label">Nouveau code (${loginCodeLength} chiffres)</label>
+      <input id="login-newcode" type="password" inputmode="numeric" maxlength="${loginCodeLength}" placeholder="${codeDots}" />
       <label class="field-label">Confirme le code</label>
-      <input id="login-newcode2" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+      <input id="login-newcode2" type="password" inputmode="numeric" maxlength="${loginCodeLength}" placeholder="${codeDots}" />
       <div style="margin-top:16px;"><button class="btn" id="setcode-btn">Définir mon code et me connecter</button></div>
     `;
   } else if (loginSelectedNom && loginNeedsSetup === false) {
     formHtml = `
-      <label class="field-label">Code (4 chiffres)</label>
-      <input id="login-code" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+      <label class="field-label">Code (${loginCodeLength} chiffres)</label>
+      <input id="login-code" type="password" inputmode="numeric" maxlength="${loginCodeLength}" placeholder="${codeDots}" />
       <div style="margin-top:16px;"><button class="btn" id="login-btn">Se connecter</button></div>
     `;
   } else if (loginSelectedNom && loginNeedsSetup === null) {
@@ -207,7 +210,7 @@ function attachLoginEvents() {
   if (setCodeBtn) setCodeBtn.onclick = () => {
     const c1 = document.getElementById("login-newcode").value;
     const c2 = document.getElementById("login-newcode2").value;
-    if (!/^\d{4}$/.test(c1)) { loginError = "Le code doit comporter exactement 4 chiffres."; render(); return; }
+    if (!new RegExp(`^\\d{${loginCodeLength}}$`).test(c1)) { loginError = `Le code doit comporter exactement ${loginCodeLength} chiffres.`; render(); return; }
     if (c1 !== c2) { loginError = "Les deux codes ne correspondent pas."; render(); return; }
     setInitialCode(loginSelectedNom, c1);
   };
@@ -553,14 +556,16 @@ function render() {
   </div>`;
 
   if (window.__showChangeCode) {
+    const ccLen = hasRole("Admin") ? 6 : 4;
+    const ccDots = "•".repeat(ccLen);
     html += `<div class="card">
       <div class="section-h" style="margin-bottom:8px;">Changer mon code</div>
       <label class="field-label">Code actuel</label>
-      <input id="cc-old" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
-      <label class="field-label">Nouveau code (4 chiffres)</label>
-      <input id="cc-new1" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+      <input id="cc-old" type="password" inputmode="numeric" maxlength="${ccLen}" placeholder="${ccDots}" />
+      <label class="field-label">Nouveau code (${ccLen} chiffres)</label>
+      <input id="cc-new1" type="password" inputmode="numeric" maxlength="${ccLen}" placeholder="${ccDots}" />
       <label class="field-label">Confirme le nouveau code</label>
-      <input id="cc-new2" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+      <input id="cc-new2" type="password" inputmode="numeric" maxlength="${ccLen}" placeholder="${ccDots}" />
       ${window.__changeCodeError ? `<div class="login-error">${window.__changeCodeError}</div>` : ""}
       <div class="row-flex" style="margin-top:10px;">
         <button class="btn" style="flex:1;" id="cc-submit">Valider</button>
