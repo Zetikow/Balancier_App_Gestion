@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0c0e16" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Balancier" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="images/icon-192.png" />
+<link rel="icon" type="image/png" href="images/icon-192.png" />
+<title>Balancier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app">Chargement...</div>
+
+<script src="config/google-script-config.js"></script>
+
+<!-- Config propre au club : à éditer pour un autre club/asso (barème, effectif, salle, liens) -->
+<script src="js/config/club-config.js"></script>
+
+<!-- Core : état partagé, utilitaires, sync serveur, rendu principal, câblage des événements -->
+<script src="js/core/state.js"></script>
+<script src="js/core/utils.js"></script>
+<script src="js/core/api.js"></script>
+
+<!-- Modules métier : un fichier par fonctionnalité, à retirer librement pour un autre club -->
+<script src="js/modules/caisse-noire.js"></script>
+<script src="js/modules/agenda.js"></script>
+<script src="js/modules/composition.js"></script>
+<script src="js/modules/presence.js"></script>
+<script src="js/modules/gestion-matchs.js"></script>
+<script src="js/modules/cartes.js"></script>
+<script src="js/modules/osteo.js"></script>
+<script src="js/modules/actualites.js"></script>
+<script src="js/modules/salaries.js"></script>
+<script src="js/modules/paiements.js"></script>
+<script src="js/modules/galerie.js"></script>
+<script src="js/modules/profil.js"></script>
+<script src="js/modules/support.js"></script>
+<script src="js/modules/guide.js"></script>
+
+<script src="js/core/render.js"></script>
+<script src="js/core/events.js"></script>
+
+<!-- Doit rester le dernier fichier chargé : démarre le rendu et la synchronisation -->
+<script src="js/boot.js"></script>
+</body>
+</html>
