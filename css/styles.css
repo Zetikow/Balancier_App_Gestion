@@ -41,6 +41,10 @@ body {
 .logout-link { font-size: 11px; color: #e4e8f2; text-decoration: underline; cursor: pointer; }
 .badge { font-size: 9px; padding: 2px 8px; border-radius: 8px; background: #1a1f30; color: var(--accent); border: 1px solid #243049; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
 
+.sport-toggle-wrap { position: relative; display: flex; justify-content: flex-end; margin: 0 0 8px; }
+.sport-toggle-btn { padding: 7px 12px; border-radius: 20px; border: 1px solid rgba(205,214,227,0.35); background: rgba(255,255,255,0.08); color: #fff; font-size: 12.5px; font-weight: 800; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.sport-toggle-btn:active { transform: scale(0.96); }
+.sport-toggle-menu { top: 40px; right: 0; min-width: 190px; }
 .avatar-wrap { position: relative; }
 .avatar-btn { width: 54px; height: 54px; border-radius: 15px; background: rgba(255,255,255,0.16); border: 2px solid #0d1b33; color: #0d1b33; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px; font-family: var(--font-disp); cursor: pointer; transition: transform 0.12s; flex-shrink: 0; position: relative; z-index: 2; }
 .avatar-btn:active, .avatar-btn.tap-active { transform: scale(0.92); }

@@ -271,9 +271,34 @@ function renderWeeklyRecapCard() {
   </div>`;
 }
 
+// Bouton de statut sportif — visuel uniquement pour l'instant : change juste le libellé/icône
+// affiché (window.__sportMode, persisté en localStorage), aucune autre logique n'est câblée. Les
+// autres sports (terrain de rugby pour la compo, 15 titulaires + 7 remplaçants, etc.) seront
+// codés plus tard — pour l'instant ils apparaissent seulement comme "bientôt disponible".
+const SPORT_MODES = [
+  { id: "handball", icon: "🏐", label: "Handball", available: true },
+  { id: "rugby", icon: "🏉", label: "Rugby", available: false },
+  { id: "basket", icon: "🏀", label: "Basketball", available: false },
+];
+const SPORT_MODE_KEY = "balancier-sport-mode";
+
+function currentSportMode() {
+  try { return localStorage.getItem(SPORT_MODE_KEY) || "handball"; } catch (err) { return "handball"; }
+}
+
+function renderSportToggle() {
+  const current = SPORT_MODES.find(s => s.id === currentSportMode()) || SPORT_MODES[0];
+  return `<div class="sport-toggle-wrap">
+    <button type="button" class="sport-toggle-btn" id="sport-toggle-trigger">${current.icon} ${current.label} <span style="opacity:0.65;">▾</span></button>
+    ${window.__sportToggleOpen ? `<div class="avatar-menu sport-toggle-menu">
+      ${SPORT_MODES.map(s => `<div class="avatar-menu-item ${s.id === current.id ? 'active' : ''} ${!s.available ? 'disabled' : ''}" data-sport-select="${s.id}">${s.icon} ${s.label}${!s.available ? ` <span class="muted" style="font-size:9.5px;">— bientôt disponible</span>` : ""}</div>`).join("")}
+    </div>` : ""}
+  </div>`;
+}
+
 function renderHome() {
   const canManage = hasRole("Coach") || hasRole("Admin");
-  let html = "";
+  let html = renderSportToggle();
 
   const nextEv = nextEvenement();
 

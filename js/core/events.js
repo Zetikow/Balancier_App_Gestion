@@ -18,7 +18,8 @@ function attachEvents() {
   attachAgendaEvents();
   attachCompositionEvents();
   attachPresenceEvents();
-  attachCovoiturageEvents();
+  attachGestionMatchsEvents();
+  attachCartesEvents();
   attachOsteoEvents();
   attachActualitesEvents();
   attachSalariesEvents();
@@ -42,6 +43,25 @@ function animateFillBars() {
 }
 
 function attachCoreNavEvents() {
+  const sportToggleTrigger = document.getElementById("sport-toggle-trigger");
+  if (sportToggleTrigger) sportToggleTrigger.onclick = () => {
+    vibrate();
+    window.__sportToggleOpen = !window.__sportToggleOpen;
+    render();
+  };
+
+  document.querySelectorAll("[data-sport-select]").forEach(el => {
+    el.onclick = () => {
+      vibrate();
+      const sport = SPORT_MODES.find(s => s.id === el.dataset.sportSelect);
+      if (sport && sport.available) {
+        try { localStorage.setItem(SPORT_MODE_KEY, sport.id); } catch (err) {}
+      }
+      window.__sportToggleOpen = false;
+      render();
+    };
+  });
+
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.onclick = () => { vibrate(); currentPage = btn.dataset.page; window.__avatarMenuOpen = false; render(); };
   });
