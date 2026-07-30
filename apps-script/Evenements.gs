@@ -22,6 +22,7 @@ function setupEvenements() {
   migrateEvenementsFormat();
   renameVenueInEvenements("Gymnase Leclerc", "Lustucru Arena");
   ensureEvenementsEquipeColumn(sheet);
+  ensureEvenementsSansPresenceColumn(sheet);
 }
 
 // Ajoute la colonne "Score" (ex: "28-24") à la feuille Evenements si elle n'existe pas encore —
@@ -31,6 +32,17 @@ function ensureEvenementsScoreColumn(sheet) {
   if (header[7] !== "Score") {
     sheet.getRange(1, 8).setValue("Score");
     sheet.getRange(1, 8).setFontWeight("bold");
+  }
+}
+
+// Ajoute la colonne "SansPresence" ("1" = pointage de présence désactivé pour cet événement,
+// vide sinon) — utile pour un match visible de tout le club où seul le suivi organisateur (ex:
+// foodtruck) compte, sans qu'on demande à tout le monde de pointer présent/absent.
+function ensureEvenementsSansPresenceColumn(sheet) {
+  const header = sheet.getRange(1, 1, 1, 9).getValues()[0];
+  if (header[8] !== "SansPresence") {
+    sheet.getRange(1, 9).setValue("SansPresence");
+    sheet.getRange(1, 9).setFontWeight("bold");
   }
 }
 
@@ -175,6 +187,7 @@ function api_addEvenement(ss, e) {
   if (!hasRole(role, "Coach") && !hasRole(role, "Admin")) return jsonOut({ ok: false, error: "forbidden" });
   const sheet = ss.getSheetByName("Evenements");
   ensureEvenementsScoreColumn(sheet);
+  ensureEvenementsSansPresenceColumn(sheet);
   const id = "e" + Date.now() + "_" + Math.floor(Math.random() * 1000);
   const row = sheet.getLastRow() + 1;
   sheet.getRange(row, 1).setValue(id);
@@ -185,6 +198,7 @@ function api_addEvenement(ss, e) {
   sheet.getRange(row, 6).setValue(e.parameter.lieu || "");
   const equipesCoach = equipesForRole(ss, e.parameter.authNom, e.parameter.authCode, "Coach");
   sheet.getRange(row, 7).setValue(e.parameter.equipe || equipesCoach[0] || "SM1");
+  if (e.parameter.sansPresence) sheet.getRange(row, 9).setValue("1");
   return jsonOut({ ok: true, id });
 }
 
@@ -193,6 +207,7 @@ function api_updateEvenement(ss, e) {
   if (!hasRole(role, "Coach") && !hasRole(role, "Admin")) return jsonOut({ ok: false, error: "forbidden" });
   const sheet = ss.getSheetByName("Evenements");
   ensureEvenementsScoreColumn(sheet);
+  ensureEvenementsSansPresenceColumn(sheet);
   const id = e.parameter.id;
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
@@ -208,6 +223,9 @@ function api_updateEvenement(ss, e) {
       }
       if (Object.prototype.hasOwnProperty.call(e.parameter, "score")) {
         sheet.getRange(row, 8).setValue(e.parameter.score || "");
+      }
+      if (Object.prototype.hasOwnProperty.call(e.parameter, "sansPresence")) {
+        sheet.getRange(row, 9).setValue(e.parameter.sansPresence ? "1" : "");
       }
       return jsonOut({ ok: true });
     }

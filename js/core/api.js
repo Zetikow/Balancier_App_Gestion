@@ -30,6 +30,7 @@ async function fetchAll() {
     cartes = (data.cartes || []).slice(1).filter(r => r[0]);
     cartesReponses = (data.cartesReponses || []).slice(1).filter(r => r[0]);
     foodtrucks = (data.foodtrucks || []).slice(1).filter(r => r[0]);
+    foodtrucksCatalog = (data.foodtrucksCatalog || []).slice(1).filter(r => r[0]);
     const parsedPE = parsePresenceEvenements(data.presenceEvenements || []);
     presenceEvenements = parsedPE.p;
     presenceJustifications = parsedPE.j;

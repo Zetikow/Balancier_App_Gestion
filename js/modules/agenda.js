@@ -561,11 +561,17 @@ function renderAgenda() {
         `}
         <label class="field-label">Lieu</label>
         <input id="ev-lieu" type="text" value="${DEFAULT_VENUE_NAME}" />
+        ${isMatchType && canManageFoodtrucks() ? `<label class="field-label">Foodtruck (si match à domicile)</label>
+        ${renderFoodtruckNomSelect("ev-foodtruck", "")}` : ""}
         ${(hasRole("Admin")) ? `<label class="field-label">Équipe</label>
         <select id="ev-equipe">
           ${TEAMS.map(t => `<option value="${t}" ${activeTeam === t ? "selected" : ""}>${teamDisplayLabel(t)}</option>`).join("")}
           <option value="Toutes" ${activeTeam === "Toutes" ? "selected" : ""}>Toutes (club entier)</option>
         </select>` : ""}
+        <label style="display:flex; align-items:center; gap:6px; margin-top:10px; font-size:11.5px; color:#e4e8f2; font-weight:700;">
+          <input id="ev-sans-presence" type="checkbox" style="width:16px; height:16px;" />
+          Visible par tout le club, sans pointage de présence
+        </label>
         <button class="btn" id="submit-add-event" style="margin-top:4px;">Enregistrer l'événement</button>
       </div>`;
     }
@@ -640,7 +646,7 @@ function renderJustifBlock(eventId) {
 }
 
 function renderEventCard(ev, canManage, isPast, staggerIndex) {
-  const [id, date, heure, type, titre, lieu, equipe, score] = ev;
+  const [id, date, heure, type, titre, lieu, equipe, score, sansPresence] = ev;
   const d = eventDateObj(ev);
   const presIdentity = myPresenceIdentity();
   const val = presenceEvenements[`${id}_${presIdentity.nom}`];
@@ -682,6 +688,10 @@ function renderEventCard(ev, canManage, isPast, staggerIndex) {
           <input id="edit-ev-score-them-${id}" type="number" min="0" placeholder="Adverse" value="${scoreThem}" style="flex:1; text-align:center;" />
         </div>`;
       })() : ""}
+      <label style="display:flex; align-items:center; gap:6px; margin-top:10px; font-size:11.5px; color:#e4e8f2; font-weight:700;">
+        <input id="edit-ev-sans-presence-${id}" type="checkbox" ${sansPresence ? "checked" : ""} style="width:16px; height:16px;" />
+        Visible par tout le club, sans pointage de présence
+      </label>
       <div class="row-flex" style="margin-top:10px;">
         <button class="btn" style="flex:1;" data-save-event="${id}">Enregistrer</button>
         <button class="btn secondary" style="flex:1;" data-cancel-edit-event="1">Annuler</button>
@@ -725,8 +735,9 @@ function renderEventCard(ev, canManage, isPast, staggerIndex) {
         <span class="ev-type-big ${typeClass(type)}">${type || "Événement"}</span>
       </div>
       <div class="ev-date-full">${dateFr}${heureFmt ? " · " + heureFmt : ""}</div>
-      <div class="ev-meta">${lieu || ""}${canManage ? (lieu ? " · " : "") + presentCount + " présents / " + absentCount + " absents" : ""}</div>
-      ${(!isPast && !hasRole("Bénévole")) ? (
+      <div class="ev-meta">${lieu || ""}${(canManage && !sansPresence) ? (lieu ? " · " : "") + presentCount + " présents / " + absentCount + " absents" : ""}</div>
+      ${sansPresence ? `<div class="muted" style="margin-top:8px; font-size:11.5px;">👁️ Visible par tout le club — pas de pointage de présence pour cet événement.</div>` : ""}
+      ${(!isPast && !hasRole("Bénévole") && !sansPresence) ? (
         compositionNonSelected(ev, presIdentity.nom)
           ? `<div class="composition-not-selected-badge">🔒 Non sélectionné</div>`
           : (presIdentity.editable ? `<div class="toggle-group" style="margin-top:8px;">
@@ -743,19 +754,28 @@ function renderEventCard(ev, canManage, isPast, staggerIndex) {
 
 // ===================== ACTIONS API =====================
 
-async function addEvenementApi(date, heure, type, titre, lieu, equipe) {
+async function addEvenementApi(date, heure, type, titre, lieu, equipe, foodtruckNom, sansPresence) {
   // Optimiste : on ferme le formulaire et on affiche la carte tout de suite (id provisoire),
   // sans attendre l'aller-retour serveur — voir fetchAll() qui remplace ensuite cette liste par
   // la version serveur (id définitif) une fois la réponse arrivée.
   const finalEquipe = equipe || primaryEquipe();
   const tempId = "temp_" + Date.now();
-  evenements.push([tempId, date, heure, type, titre, lieu, finalEquipe, ""]);
+  evenements.push([tempId, date, heure, type, titre, lieu, finalEquipe, "", sansPresence ? "1" : ""]);
   showAddEvent = false;
   render();
   try {
-    const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=addEvenement&date=${encodeURIComponent(date)}&heure=${encodeURIComponent(heure)}&type=${encodeURIComponent(type)}&titre=${encodeURIComponent(titre)}&lieu=${encodeURIComponent(lieu)}&equipe=${encodeURIComponent(finalEquipe)}&authNom=${encodeURIComponent(session.nom)}&authCode=${encodeURIComponent(session.code)}`);
+    const params = new URLSearchParams({ action: "addEvenement", date, heure, type, titre, lieu, equipe: finalEquipe, authNom: session.nom, authCode: session.code });
+    if (sansPresence) params.set("sansPresence", "1");
+    const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
     const data = await res.json();
     if (data.ok) {
+      // Un foodtruck choisi lors de la création du match (uniquement s'il s'agit bien d'un match
+      // à domicile) est enregistré directement dans le suivi Foodtrucks de Gestion des matchs, sans
+      // ressaisie manuelle après coup.
+      if (foodtruckNom && isHomeMatch(lieu) && data.id) {
+        const catalogEntry = foodtrucksCatalog.find(r => r[0] === foodtruckNom);
+        addFoodtruckApi(data.id, foodtruckNom, (catalogEntry && catalogEntry[1]) || "", 0, "");
+      }
       await fetchAll();
     } else {
       evenements = evenements.filter(ev => ev[0] !== tempId);
@@ -777,10 +797,11 @@ async function deleteEvenementApi(id) {
   } catch (err) { isOnline = false; render(); }
 }
 
-async function updateEvenementApi(id, date, heure, type, titre, lieu, equipe, score) {
+async function updateEvenementApi(id, date, heure, type, titre, lieu, equipe, score, sansPresence) {
   try {
     const params = new URLSearchParams({ action: "updateEvenement", id, date, heure, type, titre, lieu, equipe: equipe || "SM1", authNom: session.nom, authCode: session.code });
     if (score !== undefined) params.set("score", score);
+    if (sansPresence !== undefined) params.set("sansPresence", sansPresence ? "1" : "");
     await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
     window.__editingEvenementId = null;
     await fetchAll();
@@ -936,6 +957,8 @@ function attachAgendaEvents() {
     }
   };
 
+  attachFoodtruckNomSelectEvents("ev-foodtruck", false);
+
   const submitAddEvent = document.getElementById("submit-add-event");
   if (submitAddEvent) submitAddEvent.onclick = () => {
     const date = readDateSelect("ev-date");
@@ -953,7 +976,10 @@ function attachAgendaEvents() {
     const equipeSelect = document.getElementById("ev-equipe");
     const equipe = equipeSelect ? equipeSelect.value : (hasRole("Salarié") ? "Toutes" : primaryEquipe());
     if (!date || !titre) { alert("Merci de renseigner au moins la date complète et le titre."); return; }
-    addEvenementApi(date, heure, type, titre, lieu, equipe);
+    const foodtruckNom = (type === "Match" && document.getElementById("ev-foodtruck-nom-select")) ? readFoodtruckNomFromForm("ev-foodtruck") : "";
+    const sansPresenceEl = document.getElementById("ev-sans-presence");
+    const sansPresence = sansPresenceEl ? sansPresenceEl.checked : false;
+    addEvenementApi(date, heure, type, titre, lieu, equipe, foodtruckNom, sansPresence);
   };
 
   document.querySelectorAll("[data-toggle-ev-menu]").forEach(el => {
@@ -1000,7 +1026,9 @@ function attachAgendaEvents() {
       if (scoreUsInput && scoreThemInput) {
         score = (scoreUsInput.value !== "" && scoreThemInput.value !== "") ? `${scoreUsInput.value}-${scoreThemInput.value}` : "";
       }
-      updateEvenementApi(id, date, heure, type, titre, lieu, equipe, score);
+      const sansPresenceEl = document.getElementById(`edit-ev-sans-presence-${id}`);
+      const sansPresence = sansPresenceEl ? sansPresenceEl.checked : undefined;
+      updateEvenementApi(id, date, heure, type, titre, lieu, equipe, score, sansPresence);
     };
   });
 }

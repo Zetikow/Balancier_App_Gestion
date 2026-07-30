@@ -312,6 +312,51 @@ function foodtruckEntriesFor() {
   return foodtrucks.filter(r => ids.has(r[1]));
 }
 
+// Sélecteur "liste" pour le nom du foodtruck : catalogue des habitués + option "Autre" avec
+// saisie libre pour un nouveau passage ponctuel (voir addFoodtruckCatalogApi pour l'ajouter au
+// catalogue dans la foulée). idPrefix distingue le formulaire d'ajout de ceux d'édition en ligne.
+function renderFoodtruckNomSelect(idPrefix, currentNom) {
+  const inCatalog = foodtrucksCatalog.some(r => r[0] === currentNom);
+  const isAutre = !!currentNom && !inCatalog;
+  let html = `<select id="${idPrefix}-nom-select">
+    <option value="">— Choisir —</option>
+    ${foodtrucksCatalog.map(r => `<option value="${escapeHtml(r[0])}" ${currentNom === r[0] ? "selected" : ""}>${escapeHtml(r[0])}</option>`).join("")}
+    <option value="__autre__" ${isAutre ? "selected" : ""}>Autre (saisir un nom)…</option>
+  </select>`;
+  html += `<input id="${idPrefix}-nom-autre" type="text" placeholder="Nom du foodtruck" value="${escapeHtml(isAutre ? currentNom : "")}" style="margin-top:6px; ${isAutre ? "" : "display:none;"}" />`;
+  return html;
+}
+
+function renderFoodtruckCatalogCard() {
+  let html = `<div class="section-h" style="margin-top:14px;">Catalogue des foodtrucks habituels</div>`;
+  html += `<div class="card">`;
+  if (foodtrucksCatalog.length === 0) {
+    html += `<div class="muted" style="font-size:12px;">Aucun foodtruck enregistré — ajoute-en un ci-dessous pour le retrouver dans la liste déroulante.</div>`;
+  } else {
+    foodtrucksCatalog.forEach(([nom, prixDefaut]) => {
+      html += `<div class="paiement-row">
+        <div>
+          <div style="font-weight:700; color:#e8e8ee;">${escapeHtml(nom)}</div>
+          ${prixDefaut ? `<div class="muted" style="font-size:11px;">${escapeHtml(prixDefaut)}</div>` : ""}
+        </div>
+        ${iconBtn(ICON_CROSS, "ev-del", `data-delete-foodtruck-catalog="${escapeHtml(nom)}"`)}
+      </div>`;
+    });
+  }
+  html += `<button class="btn add-btn-primary" id="toggle-add-foodtruck-catalog" style="margin-top:10px;">${window.__showAddFoodtruckCatalog ? "− Fermer" : "+ Ajouter un foodtruck au catalogue"}</button>`;
+  if (window.__showAddFoodtruckCatalog) {
+    html += `<div class="add-form">
+      <label class="field-label">Nom du foodtruck</label>
+      <input id="foodtruck-catalog-nom" type="text" placeholder="Ex: Chez Mario — Pizza" />
+      <label class="field-label">Prix par défaut (optionnel)</label>
+      <input id="foodtruck-catalog-prix" type="text" placeholder="Ex: 8€ la part" />
+      <button class="btn" id="foodtruck-catalog-add" style="margin-top:6px;">Ajouter au catalogue</button>
+    </div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
 function renderFoodtruckSection() {
   const matches = foodtruckHomeMatches();
   const entries = foodtruckEntriesFor();
@@ -328,8 +373,8 @@ function renderFoodtruckSection() {
       html += `<div class="card muted">Aucun match à domicile enregistré pour l'instant.</div>`;
     } else {
       html += `<div class="add-form">
-        <label class="field-label">Nom du foodtruck</label>
-        <input id="foodtruck-nom" type="text" placeholder="Ex: Chez Mario — Pizza" />
+        <label class="field-label">Foodtruck</label>
+        ${renderFoodtruckNomSelect("foodtruck", "")}
         <label class="field-label">Match associé</label>
         <select id="foodtruck-event">
           ${matches.map(ev => `<option value="${escapeHtml(ev[0])}">${eventDateObj(ev).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })} — ${escapeHtml(eventEquipe(ev))} — ${escapeHtml(formatMatchDisplay(ev[4], ev[5]).label || ev[4] || "Match")}</option>`).join("")}
@@ -345,6 +390,8 @@ function renderFoodtruckSection() {
     }
   }
 
+  html += renderFoodtruckCatalogCard();
+
   html += `<div class="section-h">Historique</div>`;
   if (entries.length === 0) {
     html += `<div class="card muted">Aucun passage foodtruck enregistré pour le moment.</div>`;
@@ -356,9 +403,9 @@ function renderFoodtruckSection() {
       const evLabel = ev ? `${eventDateObj(ev).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })} · ${eventEquipe(ev)} · ${formatMatchDisplay(ev[4], ev[5]).label || ev[4] || "Match"}` : "Match supprimé";
       if (window.__editingFoodtruckId === id) {
         html += `<div class="paiement-row" style="display:block; padding:10px 0;">
-          <label class="field-label">Nom du foodtruck</label>
-          <input id="edit-foodtruck-nom-${id}" type="text" value="${escapeHtml(nom || "")}" style="margin-bottom:6px;" />
-          <label class="field-label">Match associé</label>
+          <label class="field-label">Foodtruck</label>
+          ${renderFoodtruckNomSelect(`edit-foodtruck-${id}`, nom || "")}
+          <label class="field-label" style="margin-top:6px;">Match associé</label>
           <select id="edit-foodtruck-event-${id}" style="margin-bottom:6px;">
             ${matches.map(m => `<option value="${escapeHtml(m[0])}" ${m[0] === eventId ? "selected" : ""}>${eventDateObj(m).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })} — ${escapeHtml(eventEquipe(m))} — ${escapeHtml(formatMatchDisplay(m[4], m[5]).label || m[4] || "Match")}</option>`).join("")}
           </select>
@@ -471,6 +518,43 @@ async function deleteFoodtruckApi(id) {
     await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
     await fetchAll();
   } catch (err) { isOnline = false; render(); }
+}
+
+async function addFoodtruckCatalogApi(nom, prixDefaut) {
+  const tempPresent = foodtrucksCatalog.some(r => r[0] === nom);
+  if (!tempPresent) { foodtrucksCatalog.push([nom, prixDefaut || ""]); render(); }
+  try {
+    const params = new URLSearchParams({ action: "addFoodtruckCatalog", nom, prixDefaut: prixDefaut || "", authNom: session.nom, authCode: session.code });
+    const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+    const data = await res.json();
+    if (data.ok) {
+      await fetchAll();
+    } else {
+      foodtrucksCatalog = foodtrucksCatalog.filter(r => r[0] !== nom);
+      showToast(data.error === "deja_present" ? "Ce foodtruck est déjà dans le catalogue" : "Échec de l'ajout", "error");
+      render();
+    }
+  } catch (err) {
+    isOnline = false;
+    foodtrucksCatalog = foodtrucksCatalog.filter(r => r[0] !== nom);
+    showToast("Échec de l'ajout", "error");
+    render();
+  }
+}
+
+async function deleteFoodtruckCatalogApi(nom) {
+  const backup = foodtrucksCatalog;
+  foodtrucksCatalog = foodtrucksCatalog.filter(r => r[0] !== nom);
+  render();
+  try {
+    const params = new URLSearchParams({ action: "deleteFoodtruckCatalog", nom, authNom: session.nom, authCode: session.code });
+    await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+    await fetchAll();
+  } catch (err) {
+    isOnline = false;
+    foodtrucksCatalog = backup;
+    render();
+  }
 }
 
 // Historique du covoiturage (matchs passés) pour une personne donnée — utilisé notamment sur
@@ -587,10 +671,15 @@ function attachGestionMatchsEvents() {
     render();
   };
 
+  // Sélecteur "liste" du nom : bascule vers la saisie libre sur "Autre", et pré-remplit le prix
+  // par défaut du catalogue quand un foodtruck connu est choisi (uniquement sur le formulaire
+  // d'ajout — en édition, on ne veut pas écraser un prix déjà personnalisé).
+  attachFoodtruckNomSelectEvents("foodtruck", true);
+
   const foodtruckAdd = document.getElementById("foodtruck-add");
   if (foodtruckAdd) foodtruckAdd.onclick = () => {
     const eventId = document.getElementById("foodtruck-event").value;
-    const nom = document.getElementById("foodtruck-nom").value.trim();
+    const nom = readFoodtruckNomFromForm("foodtruck");
     const prix = document.getElementById("foodtruck-prix").value.trim();
     const benefice = parseFloat(document.getElementById("foodtruck-benefice").value) || 0;
     const notes = document.getElementById("foodtruck-notes").value.trim();
@@ -607,11 +696,13 @@ function attachGestionMatchsEvents() {
     el.onclick = () => { window.__editingFoodtruckId = null; render(); };
   });
 
+  if (window.__editingFoodtruckId) attachFoodtruckNomSelectEvents(`edit-foodtruck-${window.__editingFoodtruckId}`, false);
+
   document.querySelectorAll("[data-save-foodtruck]").forEach(el => {
     el.onclick = () => {
       const id = el.dataset.saveFoodtruck;
       const eventId = document.getElementById(`edit-foodtruck-event-${id}`).value;
-      const nom = document.getElementById(`edit-foodtruck-nom-${id}`).value.trim();
+      const nom = readFoodtruckNomFromForm(`edit-foodtruck-${id}`);
       const prix = document.getElementById(`edit-foodtruck-prix-${id}`).value.trim();
       const benefice = parseFloat(document.getElementById(`edit-foodtruck-benefice-${id}`).value) || 0;
       const notes = document.getElementById(`edit-foodtruck-notes-${id}`).value.trim();
@@ -626,4 +717,57 @@ function attachGestionMatchsEvents() {
       if (confirm("Supprimer ce passage foodtruck ?")) deleteFoodtruckApi(id);
     };
   });
+
+  const toggleAddFoodtruckCatalog = document.getElementById("toggle-add-foodtruck-catalog");
+  if (toggleAddFoodtruckCatalog) toggleAddFoodtruckCatalog.onclick = () => {
+    vibrate();
+    window.__showAddFoodtruckCatalog = !window.__showAddFoodtruckCatalog;
+    render();
+  };
+
+  const foodtruckCatalogAdd = document.getElementById("foodtruck-catalog-add");
+  if (foodtruckCatalogAdd) foodtruckCatalogAdd.onclick = () => {
+    const nom = document.getElementById("foodtruck-catalog-nom").value.trim();
+    const prixDefaut = document.getElementById("foodtruck-catalog-prix").value.trim();
+    if (!nom) return;
+    window.__showAddFoodtruckCatalog = false;
+    addFoodtruckCatalogApi(nom, prixDefaut);
+  };
+
+  document.querySelectorAll("[data-delete-foodtruck-catalog]").forEach(el => {
+    el.onclick = () => {
+      const nom = el.dataset.deleteFoodtruckCatalog;
+      if (confirm(`Retirer "${nom}" du catalogue ?`)) deleteFoodtruckCatalogApi(nom);
+    };
+  });
+}
+
+// idPrefix : préfixe des ids générés par renderFoodtruckNomSelect. autofillPrix : si true, choisir
+// un foodtruck du catalogue recopie son prix par défaut dans le champ "Prix / menu" du formulaire.
+function attachFoodtruckNomSelectEvents(idPrefix, autofillPrix) {
+  const select = document.getElementById(`${idPrefix}-nom-select`);
+  if (!select) return;
+  select.onchange = () => {
+    const autreInput = document.getElementById(`${idPrefix}-nom-autre`);
+    const isAutre = select.value === "__autre__";
+    if (autreInput) {
+      autreInput.style.display = isAutre ? "" : "none";
+      if (isAutre) autreInput.focus();
+    }
+    if (autofillPrix && !isAutre && select.value) {
+      const entry = foodtrucksCatalog.find(r => r[0] === select.value);
+      const prixInput = document.getElementById(`${idPrefix}-prix`);
+      if (entry && entry[1] && prixInput && !prixInput.value) prixInput.value = entry[1];
+    }
+  };
+}
+
+function readFoodtruckNomFromForm(idPrefix) {
+  const select = document.getElementById(`${idPrefix}-nom-select`);
+  if (!select) return "";
+  if (select.value === "__autre__") {
+    const autreInput = document.getElementById(`${idPrefix}-nom-autre`);
+    return autreInput ? autreInput.value.trim() : "";
+  }
+  return select.value;
 }
