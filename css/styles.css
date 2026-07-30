@@ -258,6 +258,15 @@ body.login-mode .login-wrap { flex: 1; min-height: 0; }
 .modal-preview { flex: 1; background: #000; border-radius: 14px; overflow: hidden; }
 .modal-preview iframe { width: 100%; height: 100%; border: none; }
 
+.foodtruck-menu-thumb { width: 46px; height: 46px; border-radius: 9px; object-fit: cover; flex-shrink: 0; margin-right: 10px; cursor: pointer; border: 1px solid #232a3f; }
+.menu-image-picker-preview img { max-width: 140px; max-height: 140px; border-radius: 10px; display: block; object-fit: cover; border: 1px solid #232a3f; }
+.menu-image-overlay { position: fixed; inset: 0; background: #05060af5; display: flex; align-items: center; justify-content: center; z-index: 97; padding: 24px; }
+.menu-image-close { position: absolute; top: 16px; right: 16px; width: 34px; height: 34px; border-radius: 10px; background: #1a1f30; display: flex; align-items: center; justify-content: center; color: #e4e8f2; font-size: 17px; cursor: pointer; z-index: 1; }
+.menu-image-scroll { max-width: 100%; max-height: 100%; overflow: auto; border-radius: 14px; background: #11141f; display: flex; align-items: flex-start; justify-content: center; -webkit-overflow-scrolling: touch; }
+.menu-image-scroll img { max-width: 100%; max-height: 82vh; height: auto; display: block; cursor: zoom-in; }
+.menu-image-scroll.zoomed { display: block; align-items: initial; justify-content: initial; }
+.menu-image-scroll.zoomed img { max-width: none; max-height: none; width: auto; height: auto; cursor: zoom-out; }
+
 .app-toast { position: fixed; left: 50%; bottom: 88px; transform: translate(-50%, 20px) scale(0.92); background: #1a1f30; border: 1px solid #2a3350; color: #fff; padding: 12px 22px; border-radius: 12px; font-size: 12.5px; font-weight: 800; text-align: center; z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out, transform 0.2s ease-out; box-shadow: 0 8px 24px rgba(0,0,0,0.4); max-width: 90vw; }
 .app-toast.visible { opacity: 1; transform: translate(-50%, 0) scale(1); transition: opacity 0.35s cubic-bezier(.34,1.56,.64,1), transform 0.35s cubic-bezier(.34,1.56,.64,1); }
 .app-toast.success { border-color: rgba(51,209,122,0.5); background: rgba(21,97,51,0.97); }

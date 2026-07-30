@@ -59,6 +59,7 @@ const API_HANDLERS = {
   addFoodtruck: api_addFoodtruck,                           // Foodtrucks.gs
   updateFoodtruck: api_updateFoodtruck,                     // Foodtrucks.gs
   deleteFoodtruck: api_deleteFoodtruck,                     // Foodtrucks.gs
+  uploadFoodtruckMenuImage: api_uploadFoodtruckMenuImage,   // Foodtrucks.gs
   addFoodtruckCatalog: api_addFoodtruckCatalog,             // FoodtrucksCatalog.gs
   deleteFoodtruckCatalog: api_deleteFoodtruckCatalog,       // FoodtrucksCatalog.gs
 };

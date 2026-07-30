@@ -771,10 +771,9 @@ async function addEvenementApi(date, heure, type, titre, lieu, equipe, foodtruck
     if (data.ok) {
       // Un foodtruck choisi lors de la création du match (uniquement s'il s'agit bien d'un match
       // à domicile) est enregistré directement dans le suivi Foodtrucks de Gestion des matchs, sans
-      // ressaisie manuelle après coup.
+      // ressaisie manuelle après coup (la photo du menu se rajoute ensuite depuis Gestion des matchs).
       if (foodtruckNom && isHomeMatch(lieu) && data.id) {
-        const catalogEntry = foodtrucksCatalog.find(r => r[0] === foodtruckNom);
-        addFoodtruckApi(data.id, foodtruckNom, (catalogEntry && catalogEntry[1]) || "", 0, "");
+        addFoodtruckApi(data.id, foodtruckNom, "", "");
       }
       await fetchAll();
     } else {
@@ -957,7 +956,7 @@ function attachAgendaEvents() {
     }
   };
 
-  attachFoodtruckNomSelectEvents("ev-foodtruck", false);
+  attachFoodtruckNomSelectEvents("ev-foodtruck");
 
   const submitAddEvent = document.getElementById("submit-add-event");
   if (submitAddEvent) submitAddEvent.onclick = () => {
