@@ -671,9 +671,6 @@ function renderAgenda() {
     });
   }
 
-  if (window.__compositionMatchId) html += renderCompositionEditor(window.__compositionMatchId);
-  if (window.__compositionViewMatchId) html += renderCompositionPlayerView(window.__compositionViewMatchId);
-
   html += renderAddEventSheet();
 
   return html;

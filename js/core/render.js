@@ -732,6 +732,12 @@ function render() {
   // renderEventDetailSheet dans agenda.js et window.__eventDetailId.
   if (window.__eventDetailId) html += renderEventDetailSheet();
 
+  // Éditeur/vue composition : même raison — le bouton "Composition" est accessible depuis la
+  // fiche événement (donc potentiellement depuis n'importe quelle page, pas seulement Agenda où
+  // il vivait avant), il faut que l'éditeur puisse s'ouvrir peu importe la page active.
+  if (window.__compositionMatchId) html += renderCompositionEditor(window.__compositionMatchId);
+  if (window.__compositionViewMatchId) html += renderCompositionPlayerView(window.__compositionViewMatchId);
+
   html += `<div class="bottom-nav"><div class="nav-pill" id="nav-pill"></div>`;
   html += mainTabs.map(t => {
     const justActivated = window.__pageJustChanged && currentPage === t.id;
