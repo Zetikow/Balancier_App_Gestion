@@ -23,7 +23,12 @@
 function getFcmAccessToken() {
   const props = PropertiesService.getScriptProperties();
   const clientEmail = props.getProperty("FCM_CLIENT_EMAIL");
-  const privateKey = props.getProperty("FCM_PRIVATE_KEY");
+  // Le fichier .json du compte de service encode les retours à la ligne de la clé en "\n" littéral
+  // (deux caractères, pas un vrai saut de ligne) — un copier-coller direct dans une Propriété du
+  // script les conserve tels quels. On les reconvertit ici en vrais sauts de ligne, sans quoi la
+  // signature RSA échoue silencieusement.
+  const privateKeyRaw = props.getProperty("FCM_PRIVATE_KEY");
+  const privateKey = privateKeyRaw ? privateKeyRaw.replace(/\\n/g, "\n") : privateKeyRaw;
   if (!clientEmail || !privateKey) {
     throw new Error("FCM_CLIENT_EMAIL / FCM_PRIVATE_KEY manquants dans les Propriétés du script.");
   }
