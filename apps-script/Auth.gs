@@ -293,3 +293,25 @@ function api_setEmail(ss, e) {
   }
   return jsonOut({ ok: false, error: "not_found" });
 }
+
+// Enregistre le jeton FCM (notifications push) de l'appareil de la personne connectée, dans sa
+// propre ligne de la feuille Comptes (colonne PushSubIds). Un seul jeton par compte pour
+// l'instant (le dernier appareil qui active les notifications remplace le précédent) — pas
+// encore de gestion multi-appareils. Rien n'envoie de notification pour l'instant, ceci ne fait
+// qu'enregistrer où en envoyer une plus tard.
+function api_setPushToken(ss, e) {
+  const role = checkAuth(ss, e.parameter.authNom, e.parameter.authCode);
+  if (!role) return jsonOut({ ok: false, error: "auth" });
+  const token = e.parameter.token;
+  if (!token) return jsonOut({ ok: false, error: "missing_token" });
+  const sheet = ss.getSheetByName("Comptes");
+  ensureComptesSchema(sheet);
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][COL_NOM]).trim() === String(e.parameter.authNom).trim() && String(data[i][COL_CODE]).trim() === String(e.parameter.authCode).trim()) {
+      sheet.getRange(i + 1, COL_PUSHSUBIDS + 1).setValue(token);
+      return jsonOut({ ok: true });
+    }
+  }
+  return jsonOut({ ok: false, error: "not_found" });
+}
