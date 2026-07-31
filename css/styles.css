@@ -25,6 +25,11 @@
   --grad: linear-gradient(135deg, var(--navy) 0%, var(--accent) 55%, var(--silver) 100%);
   --glow: radial-gradient(circle, rgba(var(--accent2-rgb),0.3), transparent 70%);
   --font-disp: 'DM Sans', sans-serif;
+  /* Couleur du logo (voir renderClubLogoMark dans render.js) : bleu en Marine, rouge en Rouge
+     mat (les deux suivent simplement --accent de la palette active), blanc forcé en Noir &
+     blanc (voir l'override ci-dessous) — demande explicite, pas le gris de --accent. */
+  --logo-color: var(--accent);
+  --logo-color-rgb: var(--accent-rgb);
 }
 
 :root[data-theme="mono"] {
@@ -43,6 +48,8 @@
   --navy-rgb: 9,9,11;
   --grad: linear-gradient(135deg, var(--navy) 0%, var(--accent) 55%, var(--silver) 100%);
   --glow: radial-gradient(circle, rgba(var(--accent2-rgb),0.3), transparent 70%);
+  --logo-color: #ffffff;
+  --logo-color-rgb: 255,255,255;
 }
 
 :root[data-theme="red"] {
@@ -115,11 +122,18 @@ body {
 }
 .header { display: flex; align-items: center; gap: 16px; margin: -12px -12px 18px; padding: calc(env(safe-area-inset-top) + 22px) 20px 48px; background: linear-gradient(180deg, var(--navy) 0%, var(--navy) 32%, rgba(var(--navy-rgb),0) 100%); position: relative; }
 .header::before { content: ""; position: absolute; top: -30px; right: -40px; width: 220px; height: 220px; background: var(--glow); z-index: 1; pointer-events: none; }
-.header img { height: 70px; width: 70px; border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.3); position: relative; z-index: 2; flex-shrink: 0; }
+/* Logo Clubly en SVG inline (voir renderClubLogoMark, js/core/render.js) : le tracé n'a pas de
+   couleur propre, tout passe par --logo-color/--logo-color-rgb pour suivre la palette active
+   (bleu/rouge/blanc) — voir les jetons dans :root plus haut. Halo (drop-shadow) pour se détacher
+   du fond, demandé explicitement. */
+.club-logo-mark { position: relative; z-index: 2; flex-shrink: 0; overflow: visible; filter: drop-shadow(0 0 3px rgba(255,255,255,0.5)) drop-shadow(0 0 10px rgba(var(--logo-color-rgb),0.65)); }
+.club-logo-mark path { stroke: var(--logo-color); }
+.club-logo-mark circle { fill: var(--logo-color); }
+.header .club-logo-mark { height: 70px; width: 70px; }
 .hdr-textwrap { min-width: 0; overflow: hidden; }
 .header .title { font-family: var(--font-disp); font-size: 30px; font-weight: 700; color: #fff; letter-spacing: 0.2px; line-height: 1; position: relative; z-index: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .header .subtitle { font-size: 12px; color: rgba(255,255,255,0.85); text-transform: uppercase; letter-spacing: 1.3px; font-weight: 700; margin-top: 6px; position: relative; z-index: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.header.home-header img { height: 78px; width: 78px; border-radius: 20px; }
+.header.home-header .club-logo-mark { height: 78px; width: 78px; }
 .header.home-header .title { font-size: 34px; }
 .header.home-header .subtitle { font-size: 12.5px; }
 .header .spacer { flex: 1; }
@@ -248,7 +262,7 @@ tr.total-row td { font-weight: 800; background: #1a1710; color: #ffd23f; }
 @keyframes ptrspin { to { transform: rotate(360deg); } }
 .login-suggestion-item:active { background: rgba(var(--gold-rgb),0.18); }
 .login-card .login-glow { position: absolute; top: -60px; right: -60px; width: 220px; height: 220px; background: var(--glow); }
-.login-card img { height: 168px; margin-bottom: 16px; border-radius: 30px; position: relative; box-shadow: 0 10px 40px rgba(var(--gold-rgb),0.3), 0 0 0 1px rgba(var(--accent2-rgb),0.4); }
+.login-card .club-logo-mark { height: 130px; width: 130px; margin-bottom: 16px; }
 .login-card .login-title { font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -0.6px; margin-bottom: 6px; position: relative; }
 .login-card .login-subtitle { font-size: 13px; color: #e4e8f2; text-transform: uppercase; letter-spacing: 1.4px; font-weight: 700; margin-bottom: 10px; position: relative; }
 .login-error { color: var(--red-accent); font-size: 13px; margin-top: 10px; font-weight: 600; }
@@ -279,7 +293,7 @@ body.login-mode .login-wrap { flex: 1; min-height: 0; }
   .bottom-nav { left: 50%; right: auto; transform: translateX(-50%); width: min(820px, calc(100% - 24px)); }
   .card, .add-form { padding: 20px; }
   .header { margin: -26px -26px 20px; border-radius: 26px 26px 22px 22px; }
-  .header img { height: 78px; width: 78px; }
+  .header .club-logo-mark { height: 78px; width: 78px; }
   .header .title { font-size: 34px; }
   .header .subtitle { font-size: 13px; }
   .big-number { font-size: 36px; }
