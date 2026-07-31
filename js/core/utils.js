@@ -133,7 +133,7 @@ function showToast(message, type) {
 
 // Retour visuel immédiat au toucher, indépendant du rafraîchissement de la page
 // (le CSS :active seul n'a pas toujours le temps de s'afficher avant le re-rendu)
-const TAP_SELECTOR = ".btn, .nav-btn, .toggle-btn, .ev-edit, .ev-del, .bottom-nav button, .expand-toggle, .avatar-btn, .avatar-menu-item, .qty-btn, .add-toggle, .justif-edit-btn, .team-switch-btn, .cn-edit-pick-row, .cn-edit-cancel, .folder-card, .salaries-type-btn";
+const TAP_SELECTOR = ".btn, .nav-btn, .toggle-btn, .ev-edit, .ev-del, .bottom-nav button, .expand-toggle, .avatar-btn, .avatar-menu-item, .qty-btn, .add-toggle, .justif-edit-btn, .team-switch-btn, .mode-tab-btn, .gm-section-chip, .cn-edit-pick-row, .cn-edit-cancel, .folder-card, .salaries-type-btn";
 document.addEventListener("touchstart", (e) => {
   const el = e.target.closest(TAP_SELECTOR);
   if (el) el.classList.add("tap-active");
@@ -143,6 +143,18 @@ document.addEventListener("touchstart", (e) => {
     document.querySelectorAll(".tap-active").forEach(el => el.classList.remove("tap-active"));
   }, { passive: true });
 });
+
+// Capture la position/taille de la carte tapée juste avant qu'un clic n'ouvre une fiche (bottom
+// sheet), pour que playSheetOpenAnimation() (core/render.js) puisse la faire "grandir" depuis
+// cet endroit plutôt que glisser depuis le bas de l'écran. Capture phase : s'exécute avant les
+// gestionnaires onclick spécifiques à chaque module qui, eux, déclenchent le render() d'ouverture.
+const SHEET_OPEN_TRIGGER_SELECTOR = ".sheet-open-zone, .add-btn-primary, [data-cn-toggle-edit], [data-open-presence-detail]";
+document.addEventListener("click", (e) => {
+  const el = e.target.closest(SHEET_OPEN_TRIGGER_SELECTOR);
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  window.__sheetOriginRect = { left: r.left, top: r.top, width: r.width, height: r.height };
+}, true);
 
 // ---------- Compression d'image avant upload ----------
 // Réduit une photo prise depuis un téléphone (souvent plusieurs Mo) à une taille raisonnable

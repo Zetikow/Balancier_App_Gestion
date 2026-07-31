@@ -87,6 +87,19 @@ function attachCoreNavEvents() {
     el.onclick = () => { vibrate(); currentPage = el.dataset.gotoPage; render(); };
   });
 
+  // Fermeture générique d'une fiche (bottom sheet, voir css .sheet-*) : data-close-sheet porte
+  // le nom du drapeau window.__xxx à remettre à null (ex: "eventDetailId", "presenceDetailFor").
+  // Un seul handler pour toutes les fiches de l'appli, quelle que soit la page qui les affiche.
+  document.querySelectorAll("[data-close-sheet]").forEach(el => {
+    el.onclick = (e) => {
+      if (e.target !== e.currentTarget) return; // ne ferme pas si on clique dans la fiche elle-même
+      const flagName = el.dataset.closeSheet;
+      const overlay = el.closest(".sheet-overlay");
+      const doClose = () => { window["__" + flagName] = null; render(); };
+      if (overlay) closeSheetAnimated(overlay, doClose); else doClose();
+    };
+  });
+
   const avatarBtn = document.getElementById("avatar-btn");
   if (avatarBtn) avatarBtn.onclick = () => { window.__avatarMenuOpen = !window.__avatarMenuOpen; render(); };
 
