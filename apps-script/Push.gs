@@ -114,24 +114,22 @@ function sendPushToAll(title, body) {
 // À exécuter manuellement depuis l'éditeur (menu déroulant > testPushNotification > Exécuter)
 // pour vérifier que tout fonctionne de bout en bout, une fois les 3 Propriétés du script
 // renseignées ET qu'au moins un compte a cliqué "🔔 Activer les notifications" dans l'appli
-// (et accepté la permission sur son appareil). Remplace "Maximilien M." si besoin.
+// (et accepté la permission sur son appareil). Envoie au premier compte trouvé avec un jeton
+// enregistré (pas de nom à deviner — pratique en démo où les comptes ont des noms fictifs).
 function testPushNotification() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName("Comptes");
   ensureComptesSchema(sheet);
   const data = sheet.getDataRange().getValues();
-  const nomCible = "Maximilien M.";
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][COL_NOM]).trim() === nomCible) {
-      const token = data[i][COL_PUSHSUBIDS];
-      if (!token) {
-        Logger.log("Aucun jeton push enregistré pour ce compte — active d'abord les notifications depuis l'appli (menu avatar).");
-        return;
-      }
+    const token = data[i][COL_PUSHSUBIDS];
+    if (token) {
       const ok = sendPushNotification(token, "Test Clubly", "Si tu vois ceci, les notifications push fonctionnent !");
-      Logger.log(ok ? "Notification envoyée avec succès." : "Échec de l'envoi — voir les lignes ci-dessus pour le détail.");
+      Logger.log(ok
+        ? "Notification envoyée avec succès à " + data[i][COL_NOM] + "."
+        : "Échec de l'envoi à " + data[i][COL_NOM] + " — voir les lignes ci-dessus pour le détail.");
       return;
     }
   }
-  Logger.log("Compte introuvable.");
+  Logger.log("Aucun compte n'a encore de jeton push enregistré — active d'abord les notifications depuis l'appli (menu avatar > 🔔 Activer les notifications).");
 }
