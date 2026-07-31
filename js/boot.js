@@ -26,10 +26,6 @@ document.addEventListener("click", (e) => {
     window.__evMenuOpen = null;
     render();
   }
-  if (window.__gestionMatchsExtraOpen && !e.target.closest(".gm-extra-wrap")) {
-    window.__gestionMatchsExtraOpen = false;
-    render();
-  }
   if (window.__sportToggleOpen && !e.target.closest(".sport-toggle-wrap")) {
     window.__sportToggleOpen = false;
     render();
