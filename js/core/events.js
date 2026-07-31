@@ -103,6 +103,9 @@ function attachCoreNavEvents() {
   const avatarBtn = document.getElementById("avatar-btn");
   if (avatarBtn) avatarBtn.onclick = () => { window.__avatarMenuOpen = !window.__avatarMenuOpen; render(); };
 
+  const themePicker = document.getElementById("theme-picker");
+  if (themePicker) themePicker.onchange = (e) => { setColorTheme(e.target.value); };
+
   const menuProfil = document.getElementById("menu-profil");
   if (menuProfil) menuProfil.onclick = () => {
     window.__avatarMenuOpen = false;

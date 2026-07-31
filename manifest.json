@@ -1,6 +1,6 @@
 {
-  "name": "Balancier",
-  "short_name": "Balancier",
+  "name": "Clubly",
+  "short_name": "Clubly",
   "description": "Application de gestion de club sportif — modèle de démonstration",
   "start_url": "./index.html",
   "scope": "./",

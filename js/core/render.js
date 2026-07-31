@@ -119,7 +119,7 @@ function renderLogin() {
   return `<div class="login-wrap"><div class="login-card-outer"><div class="login-card">
     <div class="login-glow"></div>
     <img src="${LOGO_DATA_URI}" alt="Logo"/>
-    <div class="login-title">Balancier</div>
+    <div class="login-title">Clubly</div>
     <div class="login-subtitle">App de Gestion</div>
     <label class="field-label">Ton nom</label>
     <div style="position:relative;">
@@ -622,15 +622,28 @@ function render() {
   }
   document.body.classList.remove("login-mode");
 
+  // Palette de test : "Marine" (par défaut), "Noir & blanc" et "Rouge mat" — voir les blocs
+  // [data-theme="..."] dans css/styles.css. Choix mémorisé (localStorage), pour que chaque
+  // testeur garde la palette qu'il préfère d'une session à l'autre. Voir setColorTheme() plus bas.
+  const activeTheme = document.documentElement.getAttribute("data-theme") || "marine";
+
   let html = `<div class="header ${currentPage === 'home' ? 'home-header' : ''}">
-    <img src="${LOGO_DATA_URI}" alt="Logo Balancier"/>
-    <div class="hdr-textwrap"><div class="title">Balancier</div><div class="subtitle">App de Gestion</div></div>
+    <img src="${LOGO_DATA_URI}" alt="Logo Clubly"/>
+    <div class="hdr-textwrap"><div class="title">Clubly</div><div class="subtitle">App de Gestion</div></div>
     <div class="spacer"></div>
     <div class="avatar-wrap">
       <div class="avatar-btn" id="avatar-btn">${getInitials(session.nom)}</div>
       ${window.__avatarMenuOpen ? `<div class="avatar-menu">
         <div class="avatar-menu-name">${session.nom}</div>
         <div class="badge avatar-menu-role">${rolesLabel()}</div>
+        <div class="avatar-menu-item" style="display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:default;">
+          <span>🎨 Couleur</span>
+          <select id="theme-picker" style="width:auto; padding:4px 8px; font-size:12px; margin:0;">
+            <option value="marine" ${activeTheme === "marine" ? "selected" : ""}>Marine</option>
+            <option value="mono" ${activeTheme === "mono" ? "selected" : ""}>Noir &amp; blanc</option>
+            <option value="red" ${activeTheme === "red" ? "selected" : ""}>Rouge mat</option>
+          </select>
+        </div>
         <div class="avatar-menu-item" id="menu-profil">Mon profil</div>
         <div class="avatar-menu-item" id="menu-guide">📖 Consignes d'utilisation</div>
         <div class="avatar-menu-item" id="menu-support">💬 Support / une question ?</div>
