@@ -122,40 +122,43 @@ function computePresenceDetail(p, equipe, monthOnly) {
   return { absences: absences.sort(byDateAsc), presences: presences.sort(byDateAsc) };
 }
 
-function renderPresenceDetailEvRow(ev) {
+function renderPresenceDetailEvRow(ev, present) {
   const d = eventDateObj(ev);
   const dateLabel = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
   const titre = typeClass(ev[3]) === "match" ? formatMatchDisplay(ev[4], ev[5]).label : (ev[4] || ev[3] || "Événement");
-  return `<div class="presence-detail-ev">
-    <span class="presence-detail-ev-date">${dateLabel}</span>
-    <span class="presence-detail-ev-title">${escapeHtml(titre)}</span>
+  const color = present ? "#33d17a" : "#ff5a5a";
+  return `<div class="sheet-row">
+    <div class="ic" style="background:${present ? "rgba(51,209,122,0.14)" : "rgba(255,90,90,0.14)"};"><svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2">${present ? '<path d="M20 6L9 17l-5-5"/>' : '<path d="M6 6l12 12M18 6L6 18"/>'}</svg></div>
+    <div><b>${escapeHtml(titre)}</b><span>${dateLabel}</span></div>
   </div>`;
 }
 
-// Petite fenêtre (pas une page dédiée) ouverte au clic sur une ligne de moyenne de présence :
+// Fiche (bottom sheet, voir css .sheet-*) ouverte au clic sur une ligne de moyenne de présence :
 // liste les entraînements/matchs où le joueur a été marqué absent, puis présent, sur la même
-// période que la ligne cliquée. Fermeture via la croix ou un clic hors de la fenêtre ; bouton
-// "agrandir" pour passer en plein cadre (utile sur les périodes avec beaucoup d'événements).
+// période que la ligne cliquée. Fermeture via la croix ou un clic hors de la fiche.
 function renderPresenceDetailModal() {
   const ctx = window.__presenceDetailFor;
   if (!ctx) return "";
   const { p, equipe, monthOnly } = ctx;
   const { absences, presences } = computePresenceDetail(p, equipe, monthOnly);
-  const expanded = !!window.__presenceDetailExpanded;
   const periodLabel = monthOnly ? new Date().toLocaleDateString("fr-FR", { month: "long" }) : "la saison";
+  const total = absences.length + presences.length;
+  const pct = total > 0 ? Math.round((presences.length / total) * 100) : null;
 
-  return `<div class="presence-detail-overlay" data-presence-detail-close-bg="1">
-    <div class="presence-detail-sheet ${expanded ? "expanded" : ""}">
-      <div class="presence-detail-header">
-        <div class="presence-detail-title">${escapeHtml(p)} — ${periodLabel}</div>
-        <div class="presence-detail-expand" id="presence-detail-expand-toggle" title="${expanded ? "Réduire" : "Agrandir"}">${expanded ? "⤡" : "⤢"}</div>
-        <div class="modal-close" id="presence-detail-close">✕</div>
+  return `<div class="sheet-overlay open" data-close-sheet="presenceDetailFor">
+    <div class="sheet-scrim" data-close-sheet="presenceDetailFor"></div>
+    <div class="sheet">
+      <div class="sheet-close" data-close-sheet="presenceDetailFor">✕</div>
+      <div class="sheet-grab"></div>
+      <div class="sheet-hero">
+        <div class="sheet-hero-eyebrow">${escapeHtml(equipe)} · ${periodLabel}</div>
+        <h2>${escapeHtml(p)}</h2>
+        <p>${pct !== null ? `${pct}% de présence · ${presences.length} présence${presences.length > 1 ? "s" : ""} / ${total} réponse${total > 1 ? "s" : ""}` : "Pas encore de données"}</p>
       </div>
-      <div class="presence-detail-body">
-        <div class="section-h" style="margin-top:0;">Absences (${absences.length})</div>
-        ${absences.length === 0 ? `<div class="muted" style="margin-bottom:14px;">Aucune absence.</div>` : `<div style="margin-bottom:14px;">${absences.map(renderPresenceDetailEvRow).join("")}</div>`}
-        <div class="section-h">Présences (${presences.length})</div>
-        ${presences.length === 0 ? `<div class="muted">Aucune présence enregistrée.</div>` : presences.map(renderPresenceDetailEvRow).join("")}
+      <div class="sheet-body">
+        ${total === 0 ? `<div class="muted">Aucune réponse enregistrée sur cette période.</div>` : ""}
+        ${absences.length > 0 ? absences.map(ev => renderPresenceDetailEvRow(ev, false)).join("") : ""}
+        ${presences.length > 0 ? presences.map(ev => renderPresenceDetailEvRow(ev, true)).join("") : ""}
       </div>
     </div>
   </div>`;
@@ -173,9 +176,9 @@ function renderPresencePage() {
   html += renderTeamSwitcher(switcherTeams, activeTeam, "presence-team");
 
   if (canManage) {
-    html += `<div class="team-switch-row">
-      <button type="button" class="team-switch-btn ${view === 'presence' ? 'active' : ''}" data-presence-subview="presence">Présence</button>
-      <button type="button" class="team-switch-btn ${view === 'selection' ? 'active' : ''}" data-presence-subview="selection">Sélection</button>
+    html += `<div class="mode-tabs">
+      <button type="button" class="mode-tab-btn ${view === 'presence' ? 'active' : ''}" data-presence-subview="presence">Présence</button>
+      <button type="button" class="mode-tab-btn ${view === 'selection' ? 'active' : ''}" data-presence-subview="selection">Sélection</button>
     </div>`;
   }
 
@@ -212,6 +215,7 @@ function renderPresencePage() {
   }
 
   html += renderPresenceDetailModal();
+  html += renderPresenceRosterSheet(activeTeam);
 
   return html;
 }
@@ -230,26 +234,25 @@ function selectionCountFor(eventId) {
 
 function renderSelectionSection(activeTeam) {
   const matches = sortedEvenements().filter(ev => eventEquipe(ev) === activeTeam && typeClass(ev[3]) === "match");
-  const roster = rosterForEquipe(activeTeam);
   if (matches.length === 0) {
     return `<div class="card muted">Aucun match enregistré pour cette équipe.</div>`;
   }
   let html = "";
-  matches.forEach(ev => { html += renderSelectionEventCard(ev, roster); });
+  matches.forEach(ev => { html += renderSelectionEventCard(ev); });
+  html += renderPresenceSelectionSheet(activeTeam);
   return html;
 }
 
-function renderSelectionEventCard(ev, roster) {
+function renderSelectionEventCard(ev) {
   const [id, , , , titre, lieu] = ev;
   const d = eventDateObj(ev);
   const isPast = d < new Date();
-  const expanded = window.__expandedSelectionId === id;
   const displayTitre = formatMatchDisplay(titre, lieu).label || titre || "Match";
   const count = selectionCountFor(id);
   const countColor = count >= SELECTION_MAX_PLAYERS ? "#ff5a5a" : "#33d17a";
 
-  let html = `<div class="ev-card" style="flex-direction:column; align-items:stretch; ${isPast ? 'opacity:0.6;' : ''}">
-    <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" data-toggle-selection="${id}">
+  return `<div class="ev-card" style="flex-direction:column; align-items:stretch; ${isPast ? 'opacity:0.6;' : ''}">
+    <div class="sheet-open-zone" style="display:flex; align-items:center; gap:12px;" data-open-presence-selection="${id}">
       <div class="ev-date"><div class="ev-day">${d.getDate()}</div><div class="ev-month">${d.toLocaleDateString("fr-FR", { month: "short" })}</div></div>
       <div class="ev-divider"></div>
       <div class="ev-info">
@@ -259,31 +262,8 @@ function renderSelectionEventCard(ev, roster) {
         </div>
         <div class="ev-meta">${d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" })}${formatHeure(ev) ? " · " + formatHeure(ev) : ""}</div>
       </div>
-      <div style="color:#e4e8f2; font-size:16px; flex-shrink:0;">${expanded ? "▲" : "▼"}</div>
-    </div>`;
-
-  if (expanded) {
-    html += `<div style="margin-top:12px; border-top:1px solid #1a2030; padding-top:12px;">`;
-    if (roster.length === 0) {
-      html += `<div class="muted">Aucun joueur enregistré pour cette équipe.</div>`;
-    } else {
-      roster.forEach(p => {
-        const entry = selectionEntryFor(id, p);
-        const selected = entry && entry[2] === "Oui";
-        html += `<div class="pres-card">
-          <div class="pres-card-row">
-            <div class="cn-avatar pres-avatar">${getInitials(p)}</div>
-            <div class="pres-card-name">${p}</div>
-            <button type="button" class="toggle-btn ${selected ? 'present' : ''}" data-toggle-selection-player="${id}|||${p}">${selected ? "Sélectionné" : "Sélectionner"}</button>
-          </div>
-        </div>`;
-      });
-    }
-    html += `</div>`;
-  }
-
-  html += `</div>`;
-  return html;
+    </div>
+  </div>`;
 }
 
 async function setSelectionApi(eventId, nom, selectionne) {
@@ -305,16 +285,15 @@ async function setSelectionApi(eventId, nom, selectionne) {
 function renderPresenceEventCard(ev, isPast, activeTeam) {
   const [id, date, heure, type, titre, lieu] = ev;
   const d = eventDateObj(ev);
-  const expanded = window.__expandedEventId === id;
   const roster = rosterForEquipe(activeTeam || "SM1").map(p => ({ p, val: presenceEvenements[`${id}_${p}`] }));
   const presentCount = roster.filter(r => r.val === "Oui").length;
   const absentCount = roster.filter(r => r.val === "Non").length;
-  const pendingCount = roster.length - presentCount - absentCount;
   const dayName = d.toLocaleDateString("fr-FR", { weekday: "long" });
   const displayTitre = typeClass(type) === "match" ? formatMatchDisplay(titre, lieu).label : (titre || "Sans titre");
+  const pointedColor = roster.length > 0 && (presentCount + absentCount) === roster.length ? "#33d17a" : "#e4e8f2";
 
-  let html = `<div class="ev-card" style="flex-direction:column; align-items:stretch; ${isPast ? 'opacity:0.6;' : ''}">
-    <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" data-toggle-roster="${id}">
+  return `<div class="ev-card" style="flex-direction:column; align-items:stretch; ${isPast ? 'opacity:0.6;' : ''}">
+    <div class="sheet-open-zone" style="display:flex; align-items:center; gap:12px;" data-open-presence-roster="${id}">
       <div class="ev-date"><div class="ev-day">${d.getDate()}</div><div class="ev-month">${d.toLocaleDateString("fr-FR", { month: "short" })}</div></div>
       <div class="ev-divider"></div>
       <div class="ev-info">
@@ -322,37 +301,110 @@ function renderPresenceEventCard(ev, isPast, activeTeam) {
           <div class="ev-title-big">${escapeHtml(displayTitre)}</div>
           <span class="ev-type-big ${typeClass(type)}">${type || "Événement"}</span>
         </div>
-        <div class="ev-meta">${dayName} ${formatHeure(ev) ? "· " + formatHeure(ev) : ""}</div>
+        <div class="ev-meta">${dayName} ${formatHeure(ev) ? "· " + formatHeure(ev) : ""}${roster.length ? ` · <span style="color:${pointedColor}; font-weight:700;">${presentCount + absentCount}/${roster.length} pointés</span>` : ""}</div>
       </div>
-      <div style="color:#e4e8f2; font-size:16px; flex-shrink:0;">${expanded ? "▲" : "▼"}</div>
-    </div>`;
+    </div>
+  </div>`;
+}
 
-  if (expanded) {
-    html += `<div style="margin-top:12px; border-top:1px solid #1a2030; padding-top:12px;">
-      <div class="stat-bar-row">
-        <span style="color:#33d17a; font-weight:800;">${presentCount} présents</span>
-        <span style="color:#ff5a5a; font-weight:700;">${absentCount} absents · <span class="muted" style="font-weight:600;">${pendingCount} en attente</span></span>
-      </div>
-      <div class="section-h" style="margin:14px 0 6px;">Pointer ${dayName}</div>`;
-    roster.forEach(r => {
-      const justif = presenceJustifications[`${id}_${r.p}`];
-      html += `<div class="pres-card">
-        <div class="pres-card-row">
-          <div class="cn-avatar pres-avatar">${getInitials(r.p)}</div>
-          <div class="pres-card-name">${r.p}</div>
-          <div class="toggle-group">
-            <button class="toggle-btn ${r.val === 'Oui' ? 'present' : ''}" data-mark-presence="${id}" data-mark-player="${r.p}" data-mark-val="1">Oui</button>
-            <button class="toggle-btn ${r.val === 'Non' ? 'absent' : ''}" data-mark-presence="${id}" data-mark-player="${r.p}" data-mark-val="0">Non</button>
-          </div>
+// ===================== FICHE PRÉSENCE PAR ÉVÉNEMENT (bottom sheet) =====================
+// Ouverte en tapant le corps d'une carte de la sous-vue "Présence" (voir window.__presRosterFor).
+function renderPresenceRosterSheet(activeTeam) {
+  const id = window.__presRosterFor;
+  if (!id) return "";
+  const ev = evenements.find(e => e[0] === id);
+  if (!ev) return "";
+  const [, , , type, titre, lieu] = ev;
+  const d = eventDateObj(ev);
+  const dayName = d.toLocaleDateString("fr-FR", { weekday: "long" });
+  const displayTitre = typeClass(type) === "match" ? formatMatchDisplay(titre, lieu).label : (titre || "Sans titre");
+  const roster = rosterForEquipe(activeTeam || "SM1").map(p => ({ p, val: presenceEvenements[`${id}_${p}`] }));
+  const presentCount = roster.filter(r => r.val === "Oui").length;
+  const absentCount = roster.filter(r => r.val === "Non").length;
+  const pendingCount = roster.length - presentCount - absentCount;
+
+  let bodyHtml = `<div class="stat-bar-row">
+    <span style="color:#33d17a; font-weight:800;">${presentCount} présents</span>
+    <span style="color:#ff5a5a; font-weight:700;">${absentCount} absents · <span class="muted" style="font-weight:600;">${pendingCount} en attente</span></span>
+  </div>
+  <div class="section-h" style="margin:14px 0 6px;">Pointer ${dayName}</div>`;
+  roster.forEach(r => {
+    const justif = presenceJustifications[`${id}_${r.p}`];
+    bodyHtml += `<div class="pres-card">
+      <div class="pres-card-row">
+        <div class="cn-avatar pres-avatar">${getInitials(r.p)}</div>
+        <div class="pres-card-name">${r.p}</div>
+        <div class="toggle-group">
+          <button class="toggle-btn ${r.val === 'Oui' ? 'present' : ''}" data-mark-presence="${id}" data-mark-player="${r.p}" data-mark-val="1">Oui</button>
+          <button class="toggle-btn ${r.val === 'Non' ? 'absent' : ''}" data-mark-presence="${id}" data-mark-player="${r.p}" data-mark-val="0">Non</button>
         </div>
-        ${r.val === "Non" && justif ? `<div class="justif-note"><b>Motif :</b> ${escapeHtml(justif)}</div>` : ""}
+      </div>
+      ${r.val === "Non" && justif ? `<div class="justif-note"><b>Motif :</b> ${escapeHtml(justif)}</div>` : ""}
+    </div>`;
+  });
+
+  return `<div class="sheet-overlay open" data-close-sheet="presRosterFor">
+    <div class="sheet-scrim" data-close-sheet="presRosterFor"></div>
+    <div class="sheet">
+      <div class="sheet-close" data-close-sheet="presRosterFor">✕</div>
+      <div class="sheet-grab"></div>
+      <div class="sheet-hero">
+        <div class="sheet-hero-eyebrow">${escapeHtml(type || "Événement")}</div>
+        <h2>${escapeHtml(displayTitre)}</h2>
+        <p>${dayName}${formatHeure(ev) ? " · " + formatHeure(ev) : ""}${lieu ? " · " + escapeHtml(lieu) : ""}</p>
+      </div>
+      <div class="sheet-body">${bodyHtml}</div>
+    </div>
+  </div>`;
+}
+
+// ===================== FICHE SÉLECTION MATCH (bottom sheet) =====================
+// Ouverte en tapant le corps d'une carte de la sous-vue "Sélection" (voir window.__presSelectionFor).
+function renderPresenceSelectionSheet(activeTeam) {
+  const id = window.__presSelectionFor;
+  if (!id) return "";
+  const ev = evenements.find(e => e[0] === id);
+  if (!ev) return "";
+  const [, , , , titre, lieu] = ev;
+  const d = eventDateObj(ev);
+  const dayName = d.toLocaleDateString("fr-FR", { weekday: "long" });
+  const displayTitre = formatMatchDisplay(titre, lieu).label || titre || "Match";
+  const roster = rosterForEquipe(activeTeam || "SM1");
+  const count = selectionCountFor(id);
+  const countColor = count >= SELECTION_MAX_PLAYERS ? "#ff5a5a" : "#33d17a";
+
+  let bodyHtml = `<div class="stat-bar-row">
+    <span style="color:${countColor}; font-weight:800;">${count}/${SELECTION_MAX_PLAYERS} sélectionnés</span>
+  </div>`;
+  if (roster.length === 0) {
+    bodyHtml += `<div class="muted">Aucun joueur enregistré pour cette équipe.</div>`;
+  } else {
+    roster.forEach(p => {
+      const entry = selectionEntryFor(id, p);
+      const selected = entry && entry[2] === "Oui";
+      bodyHtml += `<div class="pres-card">
+        <div class="pres-card-row">
+          <div class="cn-avatar pres-avatar">${getInitials(p)}</div>
+          <div class="pres-card-name">${p}</div>
+          <button type="button" class="toggle-btn ${selected ? 'present' : ''}" data-toggle-selection-player="${id}|||${p}">${selected ? "Sélectionné" : "Sélectionner"}</button>
+        </div>
       </div>`;
     });
-    html += `</div>`;
   }
 
-  html += `</div>`;
-  return html;
+  return `<div class="sheet-overlay open" data-close-sheet="presSelectionFor">
+    <div class="sheet-scrim" data-close-sheet="presSelectionFor"></div>
+    <div class="sheet">
+      <div class="sheet-close" data-close-sheet="presSelectionFor">✕</div>
+      <div class="sheet-grab"></div>
+      <div class="sheet-hero">
+        <div class="sheet-hero-eyebrow">Sélection</div>
+        <h2>${escapeHtml(displayTitre)}</h2>
+        <p>${dayName}${formatHeure(ev) ? " · " + formatHeure(ev) : ""}${lieu ? " · " + escapeHtml(lieu) : ""}</p>
+      </div>
+      <div class="sheet-body">${bodyHtml}</div>
+    </div>
+  </div>`;
 }
 
 function computePresenceByType(nom, equipe) {
@@ -423,12 +475,8 @@ async function writeJustificationApi(eventId, nom, texte) {
 }
 
 function attachPresenceEvents() {
-  document.querySelectorAll("[data-toggle-roster]").forEach(el => {
-    el.onclick = () => {
-      const id = el.dataset.toggleRoster;
-      window.__expandedEventId = window.__expandedEventId === id ? null : id;
-      render();
-    };
+  document.querySelectorAll("[data-open-presence-roster]").forEach(el => {
+    el.onclick = () => { vibrate(); window.__presRosterFor = el.dataset.openPresenceRoster; render(); };
   });
 
   document.querySelectorAll("[data-mark-presence]").forEach(el => {
@@ -474,12 +522,8 @@ function attachPresenceEvents() {
     el.onclick = () => { vibrate(); window.__presenceSubView = el.dataset.presenceSubview; render(); };
   });
 
-  document.querySelectorAll("[data-toggle-selection]").forEach(el => {
-    el.onclick = () => {
-      const id = el.dataset.toggleSelection;
-      window.__expandedSelectionId = window.__expandedSelectionId === id ? null : id;
-      render();
-    };
+  document.querySelectorAll("[data-open-presence-selection]").forEach(el => {
+    el.onclick = () => { vibrate(); window.__presSelectionFor = el.dataset.openPresenceSelection; render(); };
   });
 
   document.querySelectorAll("[data-toggle-selection-player]").forEach(el => {
@@ -509,22 +553,9 @@ function attachPresenceEvents() {
         equipe: el.dataset.presenceDetailEquipe,
         monthOnly: el.dataset.presenceDetailMonth === "1",
       };
-      window.__presenceDetailExpanded = false;
       render();
     };
   });
-
-  const presenceDetailBg = document.querySelector("[data-presence-detail-close-bg]");
-  if (presenceDetailBg) presenceDetailBg.onclick = (e) => {
-    if (e.target === presenceDetailBg) { window.__presenceDetailFor = null; render(); }
-  };
-
-  const presenceDetailClose = document.getElementById("presence-detail-close");
-  if (presenceDetailClose) presenceDetailClose.onclick = () => { window.__presenceDetailFor = null; render(); };
-
-  const presenceDetailExpandToggle = document.getElementById("presence-detail-expand-toggle");
-  if (presenceDetailExpandToggle) presenceDetailExpandToggle.onclick = () => {
-    window.__presenceDetailExpanded = !window.__presenceDetailExpanded;
-    render();
-  };
+  // Fermeture (croix, clic hors de la fiche) : voir data-close-sheet, câblé une seule fois
+  // pour toutes les fiches de l'appli dans core/events.js.
 }

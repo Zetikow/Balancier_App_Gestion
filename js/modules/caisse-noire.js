@@ -69,7 +69,8 @@ async function writeCell(player, actionIndex, value) {
   render();
 }
 
-function renderQuickAddForm() {
+function renderQuickAddSheet() {
+  if (!window.__showQuickAdd) return "";
   const target = window.__qaPlayer || (PLAYERS.includes(session.nom) ? session.nom : PLAYERS[0]);
   const actionIdx = window.__qaAction != null ? window.__qaAction : 0;
   const actionLabel = ACTIONS[actionIdx] ? ACTIONS[actionIdx][0] : "";
@@ -94,7 +95,7 @@ function renderQuickAddForm() {
     </div>`;
   }
 
-  return `<div class="add-form">
+  const bodyHtml = `
     <label class="field-label">Joueur</label>
     <select id="qa-player">
       ${PLAYERS.map(p => `<option value="${p}" ${p === target ? "selected" : ""}>${p}</option>`).join("")}
@@ -104,7 +105,19 @@ function renderQuickAddForm() {
       ${ACTIONS.map((a, i) => `<option value="${i}" ${i == actionIdx ? "selected" : ""}>${a[0]}${isRetard && i == actionIdx ? "" : ` (${fmt(a[1])} €)`}</option>`).join("")}
     </select>
     ${quantityBlock}
-    <button class="btn" id="qa-submit" style="margin-top:12px;">Ajouter</button>
+    <button class="btn" id="qa-submit" style="margin-top:12px;">Ajouter</button>`;
+
+  return `<div class="sheet-overlay open" data-close-sheet="showQuickAdd">
+    <div class="sheet-scrim" data-close-sheet="showQuickAdd"></div>
+    <div class="sheet">
+      <div class="sheet-close" data-close-sheet="showQuickAdd">✕</div>
+      <div class="sheet-grab"></div>
+      <div class="sheet-hero">
+        <div class="sheet-hero-eyebrow">Caisse noire</div>
+        <h2>Saisir une action</h2>
+      </div>
+      <div class="sheet-body">${bodyHtml}</div>
+    </div>
   </div>`;
 }
 
@@ -127,11 +140,7 @@ function renderCaisseNoireSummary() {
     <div class="cn-hero-sub">${fmt(totalPayeEquipe)} € déjà payé · ${fmt(resteEquipe)} € restant</div>
   </div>`;
 
-  html += `<button class="btn add-btn-primary" id="cn-add-action">${window.__showQuickAdd ? "− Fermer" : "+ Saisir une action"}</button>`;
-
-  if (window.__showQuickAdd) {
-    html += renderQuickAddForm();
-  }
+  html += `<button class="btn add-btn-primary" id="cn-add-action">+ Saisir une action</button>`;
 
   const isAdmin = hasRole("Admin");
   const FROZEN_ACTIONS = ["participation mensuelle"];
@@ -147,7 +156,6 @@ function renderCaisseNoireSummary() {
     const visibleItems = isExpanded ? items : items.slice(0, 3);
     const hiddenCount = items.length - visibleItems.length;
     const editingThis = isAdmin && window.__cnEditPlayer === p;
-    const editableItems = items.filter(it => !it.frozen);
 
     let bubbles = visibleItems.map(it => {
       const isRetard = it.label === "Retard entraînement" || it.label === "Retard match";
@@ -159,36 +167,6 @@ function renderCaisseNoireSummary() {
       bubbles += `<span class="cn-bubble cn-bubble-more" data-expand-player="${p}">+${hiddenCount} autre${hiddenCount > 1 ? "s" : ""}</span>`;
     } else if (isExpanded && items.length > 3) {
       bubbles += `<span class="cn-bubble cn-bubble-more" data-collapse-player="${p}">Réduire</span>`;
-    }
-
-    let editBlock = "";
-    if (editingThis) {
-      if (window.__cnEditActionIndex === null || window.__cnEditActionIndex === undefined) {
-        editBlock = `<div class="cn-edit-picker">
-          ${editableItems.length === 0
-            ? `<div class="muted" style="font-size:11px;">Aucune action modifiable pour ce joueur.</div>`
-            : editableItems.map(it => `<div class="cn-edit-pick-row" data-cn-pick-action="${it.index}" data-cn-pick-player="${p}">
-                <span>${it.label} ×${it.count}</span><span class="cn-bubble-val">${fmt(it.value)}€</span>
-              </div>`).join("")}
-          <div class="cn-edit-cancel" data-cn-edit-cancel="1">Annuler</div>
-        </div>`;
-      } else {
-        const idx = window.__cnEditActionIndex;
-        const currentCount = (grid[p] && grid[p][idx]) || 0;
-        const qty = window.__cnEditQty !== null && window.__cnEditQty !== undefined ? window.__cnEditQty : currentCount;
-        editBlock = `<div class="cn-edit-picker">
-          <div class="field-label">${ACTIONS[idx][0]}</div>
-          <div class="qty-stepper">
-            <button type="button" class="qty-btn" data-cn-edit-delta="-1">−</button>
-            <div class="qty-value">${qty}</div>
-            <button type="button" class="qty-btn" data-cn-edit-delta="1">+</button>
-          </div>
-          <div class="row-flex" style="margin-top:8px;">
-            <button class="btn" style="flex:1;" data-cn-edit-save="${idx}" data-cn-edit-save-player="${p}">Enregistrer</button>
-            <button class="btn secondary" style="flex:1;" data-cn-edit-cancel="1">Annuler</button>
-          </div>
-        </div>`;
-      }
     }
 
     const payePlayer = totalPaye(p);
@@ -204,7 +182,6 @@ function renderCaisseNoireSummary() {
           <div class="cn-hero-sub" style="margin-bottom:6px;">${fmt(payePlayer)} € déjà payé · ${fmt(restePlayer)} € restant</div>
           ${items.length ? `<div class="cn-bubbles">${bubbles}</div>` : `<div class="cn-actions muted">Aucune action enregistrée</div>`}
           ${isAdmin && items.length > 0 ? `<div class="justif-edit-btn cn-modifier-btn" data-cn-toggle-edit="${p}">${editingThis ? "Fermer" : "Modifier"}</div>` : ""}
-          ${editBlock}
         </div>
       </div>
     </div>`;
@@ -227,7 +204,65 @@ function renderCaisseNoireSummary() {
     }
   }
 
+  if (isAdmin && window.__cnEditPlayer) {
+    html += renderCaisseNoireEditSheet();
+  }
+
+  html += renderQuickAddSheet();
+
   return html;
+}
+
+function renderCaisseNoireEditSheet() {
+  const p = window.__cnEditPlayer;
+  if (!p) return "";
+  const FROZEN_ACTIONS = ["participation mensuelle"];
+  const total = playerTotal(p);
+  const payePlayer = totalPaye(p);
+  const restePlayer = total - payePlayer;
+  const items = [];
+  ACTIONS.forEach((a, i) => {
+    const count = (grid[p] && grid[p][i]) || 0;
+    if (count > 0) items.push({ label: a[0], count, value: count * a[1], index: i, frozen: FROZEN_ACTIONS.includes(a[0]) });
+  });
+  const editableItems = items.filter(it => !it.frozen);
+
+  let bodyHtml;
+  if (window.__cnEditActionIndex === null || window.__cnEditActionIndex === undefined) {
+    bodyHtml = editableItems.length === 0
+      ? `<div class="muted" style="font-size:13px;">Aucune action modifiable pour ce joueur.</div>`
+      : editableItems.map(it => `<div class="cn-edit-pick-row" data-cn-pick-action="${it.index}" data-cn-pick-player="${p}">
+          <span>${it.label} ×${it.count}</span><span class="cn-bubble-val">${fmt(it.value)}€</span>
+        </div>`).join("");
+  } else {
+    const idx = window.__cnEditActionIndex;
+    const currentCount = (grid[p] && grid[p][idx]) || 0;
+    const qty = window.__cnEditQty !== null && window.__cnEditQty !== undefined ? window.__cnEditQty : currentCount;
+    bodyHtml = `<div class="field-label">${ACTIONS[idx][0]}</div>
+      <div class="qty-stepper">
+        <button type="button" class="qty-btn" data-cn-edit-delta="-1">−</button>
+        <div class="qty-value">${qty}</div>
+        <button type="button" class="qty-btn" data-cn-edit-delta="1">+</button>
+      </div>
+      <div class="row-flex" style="margin-top:12px;">
+        <button class="btn" style="flex:1;" data-cn-edit-save="${idx}" data-cn-edit-save-player="${p}">Enregistrer</button>
+        <button class="btn secondary" style="flex:1;" data-cn-edit-cancel="1">Annuler</button>
+      </div>`;
+  }
+
+  return `<div class="sheet-overlay open" data-cn-edit-cancel="1">
+    <div class="sheet-scrim" data-cn-edit-cancel="1"></div>
+    <div class="sheet">
+      <div class="sheet-close" data-cn-edit-cancel="1">✕</div>
+      <div class="sheet-grab"></div>
+      <div class="sheet-hero">
+        <div class="sheet-hero-eyebrow">Modifier</div>
+        <h2>${escapeHtml(p)}</h2>
+        <p>${fmt(total)} € · ${fmt(payePlayer)} € déjà payé · ${fmt(restePlayer)} € restant</p>
+      </div>
+      <div class="sheet-body">${bodyHtml}</div>
+    </div>
+  </div>`;
 }
 
 function renderDetailTable() {
@@ -405,11 +440,16 @@ function attachCaisseNoireEvents() {
   });
 
   document.querySelectorAll("[data-cn-edit-cancel]").forEach(el => {
-    el.onclick = () => {
-      window.__cnEditPlayer = null;
-      window.__cnEditActionIndex = null;
-      window.__cnEditQty = null;
-      render();
+    el.onclick = (e) => {
+      if (e.target !== e.currentTarget) return;
+      const overlay = el.closest(".sheet-overlay");
+      const doClose = () => {
+        window.__cnEditPlayer = null;
+        window.__cnEditActionIndex = null;
+        window.__cnEditQty = null;
+        render();
+      };
+      if (overlay) closeSheetAnimated(overlay, doClose); else doClose();
     };
   });
 

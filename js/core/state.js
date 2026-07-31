@@ -33,6 +33,10 @@ let cartes = []; // [[id, eventId, type, titre, optionsJSON, total], ...] (+ hea
 let cartesReponses = []; // [[carteId, nom, champ, valeur], ...] (+ header row) — champ = "vote"|"choix"|"participe"
 let foodtrucks = []; // [[id, eventId, nom, prix, benefice, notes], ...] (+ header row) — réservé Admin/Coach/Salarié
 let foodtrucksCatalog = []; // [[nom, prixDefaut], ...] (+ header row) — liste des foodtrucks habituels, réservé Admin/Coach/Salarié
+let repasMenu = []; // [[id, nom], ...] (+ header row) — menu réutilisable du repas d'après-match
+let repasPrevu = []; // [[eventId, menuId], ...] (+ header row) — plats prévus pour un match donné
+let repasTarifs = []; // [[id, label, prix], ...] (+ header row) — tarifs réutilisables (ex: repas adulte/enfant)
+let repasFinances = []; // [[id, eventId, type, label, montant], ...] (+ header row) — type = "recette"|"depense"
 
 let session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
 if (session && !session.code) { session = null; localStorage.removeItem(SESSION_KEY); }
@@ -106,7 +110,6 @@ let loginCodeLength = 4; // 4 pour tous les rôles, 6 pour l'Admin (voir require
 let loginSelectedNom = localStorage.getItem(LAST_USER_KEY) || "";
 let loginPrefilledFromMemory = !!loginSelectedNom;
 let loginNoms = null; // [{nom, role}, ...] chargé avant connexion, remplace la liste figée PLAYERS pour le menu
-let showAddEvent = false;
 
 // ---------- Données ----------
 
@@ -163,7 +166,7 @@ function parsePresenceEvenements(rows) {
 // l'appli "bloquait" après une création de créneau, sans erreur : il fallait recharger pour
 // voir le résultat).
 function isFormOpen() {
-  return !!window.__compositionDragActive || !!showAddEvent || !!window.__editingEvenementId || !!window.__editingPaiementId || !!window.__showAddPaiement || !!window.__showChangeCode || !!window.__showGenerateTrainings || !!window.__profilPosteAdding || (window.__profilPosteEditIndex !== null && window.__profilPosteEditIndex !== undefined) || !!window.__showAddActualite || !!window.__cnEditPlayer || !!window.__showSalariesAdd || !!window.__salariesPreviewFile || !!window.__salariesUploading || !!window.__profilEmailEditing || currentPage === "support" || !!window.__showAddOsteoSlot || !!window.__osteoReassignId || !!window.__osteoReserveSlotId;
+  return !!window.__compositionDragActive || !!window.__showAddEvent || !!window.__editingEvenementId || !!window.__editingPaiementId || !!window.__showAddPaiement || !!window.__showChangeCode || !!window.__showGenerateTrainings || !!window.__profilPosteAdding || (window.__profilPosteEditIndex !== null && window.__profilPosteEditIndex !== undefined) || !!window.__showAddActualite || !!window.__cnEditPlayer || !!window.__showSalariesAdd || !!window.__salariesPreviewFile || !!window.__salariesUploading || !!window.__profilEmailEditing || currentPage === "support" || !!window.__showAddOsteoSlot || !!window.__osteoReassignId || !!window.__osteoReserveSlotId;
 }
 
 // Détection générique (pas de liste à maintenir à la main comme isFormOpen ci-dessus) : si le
