@@ -7,19 +7,28 @@
 const SESSION_KEY = "balancier-session"; // {nom, role, code, equipe}
 const APP_VERSION_KEY = "balancier-app-version";
 const LAST_USER_KEY = "balancier-last-user"; // simple mémorisation du dernier nom connecté sur cet appareil (pas le code)
-const APP_VERSION = "2026-07-31-6"; // À incrémenter à chaque mise à jour déployée
+const APP_VERSION = "2026-07-31-7"; // À incrémenter à chaque mise à jour déployée
 const SEASON_START = new Date(2026, 8, 1);  // 1er septembre 2026
 const SEASON_END = new Date(2027, 5, 30);   // 30 juin 2027
 
 // Palette de test choisie par la personne (Marine/Noir & blanc/Rouge mat, voir css/styles.css
 // [data-theme]) — mémorisée par appareil, appliquée avant le premier rendu pour éviter un flash
-// de la mauvaise palette. Sélecteur dans le menu avatar (voir render.js et attachCoreNavEvents).
+// de la mauvaise palette. Pilule "🎨" à côté du sélecteur de sport sur l'Accueil (voir render.js
+// et attachCoreNavEvents). L'icône d'onglet du navigateur suit aussi la palette (favicon-*.svg).
 const THEME_KEY = "balancier-color-theme";
+const THEME_FAVICONS = { marine: "images/favicon-marine.svg", mono: "images/favicon-mono.svg", red: "images/favicon-red.svg" };
+function applyFaviconForTheme(theme) {
+  const link = document.getElementById("favicon-link");
+  if (link) link.href = THEME_FAVICONS[theme] || THEME_FAVICONS.marine;
+}
 function setColorTheme(theme) {
   localStorage.setItem(THEME_KEY, theme);
   document.documentElement.setAttribute("data-theme", theme);
+  applyFaviconForTheme(theme);
 }
-document.documentElement.setAttribute("data-theme", localStorage.getItem(THEME_KEY) || "marine");
+const initialColorTheme = localStorage.getItem(THEME_KEY) || "marine";
+document.documentElement.setAttribute("data-theme", initialColorTheme);
+applyFaviconForTheme(initialColorTheme);
 
 let grid = {};
 let comptes = []; // [[nom, code, roles, poste, nomComplet, photoUrl, email, pushSubIds], ...] (+ header row) — une ligne par personne

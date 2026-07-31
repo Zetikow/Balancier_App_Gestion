@@ -1,12 +1,15 @@
 // IMPORTANT : incrémente ce numéro à chaque mise à jour déployée de l'appli.
 // Ça force le renouvellement du cache ET (via APP_VERSION dans index.html)
 // la déconnexion de tous les utilisateurs pour qu'ils rechargent la dernière version.
-const CACHE_NAME = "balancier-v2026-07-31-6";
+const CACHE_NAME = "balancier-v2026-07-31-7";
 const ASSETS = [
   "./manifest.json",
   "./images/icon-192.png",
   "./images/icon-512.png",
-  "./images/bg-app.jpg"
+  "./images/bg-app.jpg",
+  "./images/favicon-marine.svg",
+  "./images/favicon-mono.svg",
+  "./images/favicon-red.svg"
 ];
 
 self.addEventListener("install", (event) => {
