@@ -289,13 +289,39 @@ function currentSportMode() {
   try { return localStorage.getItem(SPORT_MODE_KEY) || "handball"; } catch (err) { return "handball"; }
 }
 
+// Palettes de test (Marine/Noir & blanc/Rouge mat, voir css/styles.css [data-theme]) — même
+// style de pilule que le sélecteur de sport, placée juste à sa gauche (demande explicite : les
+// deux réglages de démo côte à côte). Choix mémorisé par appareil, voir setColorTheme (state.js).
+const COLOR_THEMES = [
+  { id: "marine", icon: "🔵", label: "Marine" },
+  { id: "mono", icon: "⚫", label: "Noir & blanc" },
+  { id: "red", icon: "🔴", label: "Rouge mat" },
+];
+
+function currentColorThemeId() {
+  return document.documentElement.getAttribute("data-theme") || "marine";
+}
+
+function renderColorTogglePill() {
+  const current = COLOR_THEMES.find(t => t.id === currentColorThemeId()) || COLOR_THEMES[0];
+  return `<div class="sport-toggle-item">
+    <button type="button" class="sport-toggle-btn" id="color-toggle-trigger">${current.icon} ${current.label} <span style="opacity:0.65;">▾</span></button>
+    ${window.__colorToggleOpen ? `<div class="avatar-menu sport-toggle-menu">
+      ${COLOR_THEMES.map(t => `<div class="avatar-menu-item ${t.id === current.id ? 'active' : ''}" data-color-select="${t.id}">${t.icon} ${t.label}</div>`).join("")}
+    </div>` : ""}
+  </div>`;
+}
+
 function renderSportToggle() {
   const current = SPORT_MODES.find(s => s.id === currentSportMode()) || SPORT_MODES[0];
   return `<div class="sport-toggle-wrap">
-    <button type="button" class="sport-toggle-btn" id="sport-toggle-trigger">${current.icon} ${current.label} <span style="opacity:0.65;">▾</span></button>
-    ${window.__sportToggleOpen ? `<div class="avatar-menu sport-toggle-menu">
-      ${SPORT_MODES.map(s => `<div class="avatar-menu-item ${s.id === current.id ? 'active' : ''} ${!s.available ? 'disabled' : ''}" data-sport-select="${s.id}">${s.icon} ${s.label}${!s.available ? ` <span class="muted" style="font-size:9.5px;">— bientôt disponible</span>` : ""}</div>`).join("")}
-    </div>` : ""}
+    ${renderColorTogglePill()}
+    <div class="sport-toggle-item">
+      <button type="button" class="sport-toggle-btn" id="sport-toggle-trigger">${current.icon} ${current.label} <span style="opacity:0.65;">▾</span></button>
+      ${window.__sportToggleOpen ? `<div class="avatar-menu sport-toggle-menu">
+        ${SPORT_MODES.map(s => `<div class="avatar-menu-item ${s.id === current.id ? 'active' : ''} ${!s.available ? 'disabled' : ''}" data-sport-select="${s.id}">${s.icon} ${s.label}${!s.available ? ` <span class="muted" style="font-size:9.5px;">— bientôt disponible</span>` : ""}</div>`).join("")}
+      </div>` : ""}
+    </div>
   </div>`;
 }
 
@@ -622,11 +648,6 @@ function render() {
   }
   document.body.classList.remove("login-mode");
 
-  // Palette de test : "Marine" (par défaut), "Noir & blanc" et "Rouge mat" — voir les blocs
-  // [data-theme="..."] dans css/styles.css. Choix mémorisé (localStorage), pour que chaque
-  // testeur garde la palette qu'il préfère d'une session à l'autre. Voir setColorTheme() plus bas.
-  const activeTheme = document.documentElement.getAttribute("data-theme") || "marine";
-
   let html = `<div class="header ${currentPage === 'home' ? 'home-header' : ''}">
     <img src="${LOGO_DATA_URI}" alt="Logo Clubly"/>
     <div class="hdr-textwrap"><div class="title">Clubly</div><div class="subtitle">App de Gestion</div></div>
@@ -636,14 +657,6 @@ function render() {
       ${window.__avatarMenuOpen ? `<div class="avatar-menu">
         <div class="avatar-menu-name">${session.nom}</div>
         <div class="badge avatar-menu-role">${rolesLabel()}</div>
-        <div class="avatar-menu-item" style="display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:default;">
-          <span>🎨 Couleur</span>
-          <select id="theme-picker" style="width:auto; padding:4px 8px; font-size:12px; margin:0;">
-            <option value="marine" ${activeTheme === "marine" ? "selected" : ""}>Marine</option>
-            <option value="mono" ${activeTheme === "mono" ? "selected" : ""}>Noir &amp; blanc</option>
-            <option value="red" ${activeTheme === "red" ? "selected" : ""}>Rouge mat</option>
-          </select>
-        </div>
         <div class="avatar-menu-item" id="menu-profil">Mon profil</div>
         <div class="avatar-menu-item" id="menu-guide">📖 Consignes d'utilisation</div>
         <div class="avatar-menu-item" id="menu-support">💬 Support / une question ?</div>

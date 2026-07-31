@@ -47,6 +47,7 @@ function attachCoreNavEvents() {
   if (sportToggleTrigger) sportToggleTrigger.onclick = () => {
     vibrate();
     window.__sportToggleOpen = !window.__sportToggleOpen;
+    window.__colorToggleOpen = false;
     render();
   };
 
@@ -103,8 +104,22 @@ function attachCoreNavEvents() {
   const avatarBtn = document.getElementById("avatar-btn");
   if (avatarBtn) avatarBtn.onclick = () => { window.__avatarMenuOpen = !window.__avatarMenuOpen; render(); };
 
-  const themePicker = document.getElementById("theme-picker");
-  if (themePicker) themePicker.onchange = (e) => { setColorTheme(e.target.value); };
+  const colorToggleTrigger = document.getElementById("color-toggle-trigger");
+  if (colorToggleTrigger) colorToggleTrigger.onclick = () => {
+    vibrate();
+    window.__colorToggleOpen = !window.__colorToggleOpen;
+    window.__sportToggleOpen = false;
+    render();
+  };
+
+  document.querySelectorAll("[data-color-select]").forEach(el => {
+    el.onclick = () => {
+      vibrate();
+      setColorTheme(el.dataset.colorSelect);
+      window.__colorToggleOpen = false;
+      render();
+    };
+  });
 
   const menuProfil = document.getElementById("menu-profil");
   if (menuProfil) menuProfil.onclick = () => {

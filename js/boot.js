@@ -26,8 +26,12 @@ document.addEventListener("click", (e) => {
     window.__evMenuOpen = null;
     render();
   }
-  if (window.__sportToggleOpen && !e.target.closest(".sport-toggle-wrap")) {
+  if (window.__sportToggleOpen && !e.target.closest(".sport-toggle-item")) {
     window.__sportToggleOpen = false;
+    render();
+  }
+  if (window.__colorToggleOpen && !e.target.closest(".sport-toggle-item")) {
+    window.__colorToggleOpen = false;
     render();
   }
 });
