@@ -1,6 +1,6 @@
 {
-  "name": "Clubly",
-  "short_name": "Clubly",
+  "name": "Clubord",
+  "short_name": "Clubord",
   "description": "Application de gestion de club sportif — modèle de démonstration",
   "start_url": "./index.html",
   "scope": "./",

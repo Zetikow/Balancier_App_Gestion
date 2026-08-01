@@ -5,12 +5,12 @@
 // currentPage.
 // ===================================================================
 
-// Logo Clubly en SVG inline (plutôt qu'une image figée) : sa couleur suit la palette active
+// Logo Clubord en SVG inline (plutôt qu'une image figée) : sa couleur suit la palette active
 // (voir --logo-color dans css/styles.css [data-theme]) — bleu en Marine, rouge en Rouge mat,
 // blanc en Noir & blanc — avec un halo pour se détacher du fond. Même tracé que la maquette
 // validée (anneau ouvert + point détaché dans le vide).
 function renderClubLogoMark() {
-  return `<svg class="club-logo-mark" viewBox="-20 -20 240 240" xmlns="http://www.w3.org/2000/svg" aria-label="Logo Clubly">
+  return `<svg class="club-logo-mark" viewBox="-20 -20 240 240" xmlns="http://www.w3.org/2000/svg" aria-label="Logo Clubord">
     <path d="M 167.6 81.9 A 70 70 0 1 1 106.1 30.3" fill="none" stroke-width="22" stroke-linecap="round"/>
     <circle cx="167.5" cy="19.6" r="18"/>
   </svg>`;
@@ -130,7 +130,7 @@ function renderLogin() {
   return `<div class="login-wrap"><div class="login-card-outer"><div class="login-card">
     <div class="login-glow"></div>
     ${renderClubLogoMark()}
-    <div class="login-title">Clubly</div>
+    <div class="login-title">Clubord</div>
     <div class="login-subtitle">App de Gestion</div>
     <label class="field-label">Ton nom</label>
     <div style="position:relative;">
@@ -661,7 +661,7 @@ function render() {
 
   let html = `<div class="header ${currentPage === 'home' ? 'home-header' : ''}">
     ${renderClubLogoMark()}
-    <div class="hdr-textwrap"><div class="title">Clubly</div><div class="subtitle">App de Gestion</div></div>
+    <div class="hdr-textwrap"><div class="title">Clubord</div><div class="subtitle">App de Gestion</div></div>
     <div class="spacer"></div>
     <div class="avatar-wrap">
       <div class="avatar-btn" id="avatar-btn">${getInitials(session.nom)}</div>

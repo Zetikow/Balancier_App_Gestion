@@ -72,7 +72,7 @@ function guideSections() {
 
 function renderGuidePage() {
   let html = `<button class="back-link" data-goto-page="home">← Retour à l'accueil</button>`;
-  html += `<div class="page-title">Consignes d'utilisation</div><div class="page-sub">Tout ce qu'il faut savoir pour utiliser Clubly</div>`;
+  html += `<div class="page-title">Consignes d'utilisation</div><div class="page-sub">Tout ce qu'il faut savoir pour utiliser Clubord</div>`;
   guideSections().forEach(s => {
     html += `<div class="card">
       <div class="section-h" style="margin-top:0;">${escapeHtml(s.title)}</div>

@@ -124,7 +124,7 @@ function testPushNotification() {
   for (let i = 1; i < data.length; i++) {
     const token = data[i][COL_PUSHSUBIDS];
     if (token) {
-      const ok = sendPushNotification(token, "Test Clubly", "Si tu vois ceci, les notifications push fonctionnent !");
+      const ok = sendPushNotification(token, "Test Clubord", "Si tu vois ceci, les notifications push fonctionnent !");
       Logger.log(ok
         ? "Notification envoyée avec succès à " + data[i][COL_NOM] + "."
         : "Échec de l'envoi à " + data[i][COL_NOM] + " — voir les lignes ci-dessus pour le détail.");

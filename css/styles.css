@@ -98,7 +98,7 @@ body {
     linear-gradient(180deg, rgba(var(--accent-rgb),0.16) 0%, transparent 45%, rgba(var(--accent-rgb),0.16) 100%);
 }
 
-/* Wordmark "Clubly" en filigrane néon : fixe au centre exact de l'écran (pas du document), reste
+/* Wordmark "Clubord" en filigrane néon : fixe au centre exact de l'écran (pas du document), reste
    immobile pendant que le contenu défile par-dessus (voir #app plus haut pour l'empilement).
    Sibling direct de #app dans index.html — jamais touché par les reconstructions de render(). */
 #bg-wordmark {
@@ -122,7 +122,7 @@ body {
 }
 .header { display: flex; align-items: center; gap: 16px; margin: -12px -12px 18px; padding: calc(env(safe-area-inset-top) + 22px) 20px 48px; background: linear-gradient(180deg, var(--navy) 0%, var(--navy) 32%, rgba(var(--navy-rgb),0) 100%); position: relative; }
 .header::before { content: ""; position: absolute; top: -30px; right: -40px; width: 220px; height: 220px; background: var(--glow); z-index: 1; pointer-events: none; }
-/* Logo Clubly en SVG inline (voir renderClubLogoMark, js/core/render.js) : le tracé n'a pas de
+/* Logo Clubord en SVG inline (voir renderClubLogoMark, js/core/render.js) : le tracé n'a pas de
    couleur propre, tout passe par --logo-color/--logo-color-rgb pour suivre la palette active
    (bleu/rouge/blanc) — voir les jetons dans :root plus haut. Halo (drop-shadow) pour se détacher
    du fond, demandé explicitement. */

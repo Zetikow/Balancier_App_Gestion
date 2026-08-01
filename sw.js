@@ -1,7 +1,7 @@
 // IMPORTANT : incrémente ce numéro à chaque mise à jour déployée de l'appli.
 // Ça force le renouvellement du cache ET (via APP_VERSION dans index.html)
 // la déconnexion de tous les utilisateurs pour qu'ils rechargent la dernière version.
-const CACHE_NAME = "balancier-v2026-07-31-10";
+const CACHE_NAME = "balancier-v2026-08-01-1";
 const ASSETS = [
   "./manifest.json",
   "./images/icon-192.png",
@@ -34,7 +34,7 @@ const messaging = firebase.messaging();
 // Notification reçue alors que l'appli est fermée ou en arrière-plan (celles reçues appli
 // ouverte au premier plan passent par messaging.onMessage() côté page, voir js/core/push.js).
 messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || "Clubly";
+  const title = (payload.notification && payload.notification.title) || "Clubord";
   const options = {
     body: (payload.notification && payload.notification.body) || "",
     icon: "images/icon-192.png",
