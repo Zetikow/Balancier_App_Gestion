@@ -44,7 +44,8 @@ let osteoReservations = []; // [[slotId, nom, motif], ...] (+ header row)
 let compositions = []; // [[matchId, nom, zone, libreX, libreY], ...] — zone = poste fixe (GB/AiG/.../Banc5) ou "Libre"
 let compositionsMeta = []; // [[matchId, publie], ...] — publie = "1" une fois visible aux joueurs/parents
 let selections = []; // [[eventId, nom, selectionne], ...] — qui est retenu pour un match (SM1), réservé Coach/Admin
-let gouter = []; // [[eventId, nom, quoi], ...] (+ header row) — matchs à domicile
+let gouter = []; // [[eventId, nom, item], ...] (+ header row) — un item coché par ligne (plusieurs items possibles par personne), matchs à domicile
+let gouterOptions = []; // [[eventId, optionsJSON], ...] (+ header row) — liste extensible des choix proposés pour le goûter d'un match donné (même principe que la carte "apero", voir cartes.js)
 let tableMarque = []; // [[eventId, nom, disponible], ...] (+ header row) — domicile et extérieur
 let maillots = []; // [[eventId, nom, pris], ...] (+ header row) — nombre de fois = compte des lignes par joueur
 let cartes = []; // [[id, eventId, type, titre, optionsJSON, total, restaurant], ...] (+ header row) — cartes "repas"/"apero" sur un événement SM1

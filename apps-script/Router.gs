@@ -49,6 +49,8 @@ const API_HANDLERS = {
   publishComposition: api_publishComposition,               // Compositions.gs
   setSelection: api_setSelection,                           // Selections.gs
   setGouter: api_setGouter,                                 // Gouter.gs
+  addGouterOption: api_addGouterOption,                     // Gouter.gs
+  removeGouterOption: api_removeGouterOption,               // Gouter.gs
   setTableMarque: api_setTableMarque,                       // TableMarque.gs
   setMaillots: api_setMaillots,                             // Maillots.gs
   addCarte: api_addCarte,                                   // Cartes.gs

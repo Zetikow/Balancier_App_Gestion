@@ -44,6 +44,8 @@ function api_getAll(ss, e) {
   const selections = selectionsSheet ? selectionsSheet.getDataRange().getValues() : [];
   const gouterSheet = ss.getSheetByName("Gouter");
   const gouter = gouterSheet ? gouterSheet.getDataRange().getValues() : [];
+  const gouterOptionsSheet = ss.getSheetByName("GouterOptions");
+  const gouterOptions = gouterOptionsSheet ? gouterOptionsSheet.getDataRange().getValues() : [];
   const tableMarqueSheet = ss.getSheetByName("TableMarque");
   const tableMarque = tableMarqueSheet ? tableMarqueSheet.getDataRange().getValues() : [];
   const maillotsSheet = ss.getSheetByName("Maillots");
@@ -69,5 +71,5 @@ function api_getAll(ss, e) {
   const repasFinancesSheet = ss.getSheetByName("RepasFinances");
   const repasFinances = (repasFinancesSheet && canManageRepas(callerRole)) ? repasFinancesSheet.getDataRange().getValues() : [];
 
-  return jsonOut({ ok: true, grid, comptes, presences, paiements, evenements, presenceEvenements, actualites, covoiturage, osteoSlots, osteoReservations, compositions, compositionsMeta, selections, gouter, tableMarque, maillots, cartes, cartesReponses, restaurants, restaurantsMenus, foodtrucks, foodtrucksCatalog, repasMenu, repasPrevu, repasTarifs, repasFinances });
+  return jsonOut({ ok: true, grid, comptes, presences, paiements, evenements, presenceEvenements, actualites, covoiturage, osteoSlots, osteoReservations, compositions, compositionsMeta, selections, gouter, gouterOptions, tableMarque, maillots, cartes, cartesReponses, restaurants, restaurantsMenus, foodtrucks, foodtrucksCatalog, repasMenu, repasPrevu, repasTarifs, repasFinances });
 }
