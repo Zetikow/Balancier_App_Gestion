@@ -40,6 +40,9 @@ async function checkAccountStatus(nom) {
 
 async function setInitialCode(nom, newCode) {
   loginError = "";
+  loginBusy = true;
+  loginBusyMessage = "Connexion...";
+  render();
   try {
     const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=setCode&nom=${encodeURIComponent(nom)}&newCode=${encodeURIComponent(newCode)}`);
     const data = await res.json();
@@ -48,16 +51,23 @@ async function setInitialCode(nom, newCode) {
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       localStorage.setItem(LAST_USER_KEY, nom);
       currentPage = "home";
+      loginBusyMessage = "Chargement des données...";
+      render();
       await fetchAll();
+      loginBusy = false;
+      render();
     } else if (data.error === "already_set") {
+      loginBusy = false;
       loginError = "Un code existe déjà pour ce nom. Entre-le, ou demande à l'Admin de le réinitialiser (vide la case dans Google Sheet).";
       loginNeedsSetup = false;
       render();
     } else {
+      loginBusy = false;
       loginError = `Le code doit comporter exactement ${data.codeLength || loginCodeLength} chiffres.`;
       render();
     }
   } catch (err) {
+    loginBusy = false;
     loginError = "Connexion impossible. Réessaie.";
     render();
   }
@@ -65,6 +75,9 @@ async function setInitialCode(nom, newCode) {
 
 async function tryLogin(nom, code) {
   loginError = "";
+  loginBusy = true;
+  loginBusyMessage = "Connexion...";
+  render();
   try {
     const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=login&nom=${encodeURIComponent(nom)}&code=${encodeURIComponent(code)}`);
     const data = await res.json();
@@ -73,12 +86,18 @@ async function tryLogin(nom, code) {
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       localStorage.setItem(LAST_USER_KEY, nom);
       currentPage = "home";
+      loginBusyMessage = "Chargement des données...";
+      render();
       await fetchAll();
+      loginBusy = false;
+      render();
     } else {
+      loginBusy = false;
       loginError = "Nom ou code incorrect.";
       render();
     }
   } catch (err) {
+    loginBusy = false;
     loginError = "Connexion impossible. Réessaie.";
     render();
   }
@@ -141,6 +160,16 @@ function renderLogin() {
     ${formHtml}
     ${loginPrefilledFromMemory && loginSelectedNom ? `<div class="muted" id="login-change-account" style="margin-top:12px; cursor:pointer; text-decoration:underline;">Ce n'est pas moi — changer de compte</div>` : ""}
     ${loginError ? `<div class="login-error">${loginError}</div>` : ""}
+  </div></div></div>`;
+}
+
+function renderLoginBusyScreen() {
+  return `<div class="login-wrap"><div class="login-card-outer"><div class="login-card">
+    <div class="login-glow"></div>
+    ${renderClubLogoMark()}
+    <div class="login-title">Clubord</div>
+    <div class="login-spinner" aria-hidden="true"></div>
+    <div class="login-busy-message">${escapeHtml(loginBusyMessage || "Connexion...")}</div>
   </div></div></div>`;
 }
 
@@ -650,6 +679,16 @@ function render() {
   const activeId = active && active.id && active.id !== "nav-extra" ? active.id : null;
   const activeSelStart = active && typeof active.selectionStart === "number" ? active.selectionStart : null;
   const activeSelEnd = active && typeof active.selectionEnd === "number" ? active.selectionEnd : null;
+
+  // Écran plein-écran affiché pendant toute la durée du login (auth + synchronisation initiale
+  // ~25 feuilles) — vérifié AVANT le "if (!session)" ci-dessous, sinon dès que session est réglé
+  // (juste avant fetchAll) render() basculerait sur la page Accueil avec des données encore
+  // vides le temps que la sync se termine, ce qui donnerait l'impression d'une appli cassée.
+  if (loginBusy) {
+    document.body.classList.add("login-mode");
+    app.innerHTML = renderLoginBusyScreen();
+    return;
+  }
 
   if (!session) {
     document.body.classList.add("login-mode");

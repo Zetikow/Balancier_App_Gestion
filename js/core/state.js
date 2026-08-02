@@ -7,7 +7,7 @@
 const SESSION_KEY = "balancier-session"; // {nom, role, code, equipe}
 const APP_VERSION_KEY = "balancier-app-version";
 const LAST_USER_KEY = "balancier-last-user"; // simple mémorisation du dernier nom connecté sur cet appareil (pas le code)
-const APP_VERSION = "2026-08-01-1"; // À incrémenter à chaque mise à jour déployée
+const APP_VERSION = "2026-08-01-2"; // À incrémenter à chaque mise à jour déployée
 const SEASON_START = new Date(2026, 8, 1);  // 1er septembre 2026
 const SEASON_END = new Date(2027, 5, 30);   // 30 juin 2027
 
@@ -128,6 +128,12 @@ let loginCodeLength = 4; // 4 pour tous les rôles, 6 pour l'Admin (voir require
 let loginSelectedNom = localStorage.getItem(LAST_USER_KEY) || "";
 let loginPrefilledFromMemory = !!loginSelectedNom;
 let loginNoms = null; // [{nom, role}, ...] chargé avant connexion, remplace la liste figée PLAYERS pour le menu
+// Le login peut être long : authentification puis synchronisation complète (~25 feuilles Google
+// Sheets en un seul appel api_getAll) — loginBusy/loginBusyMessage donnent un retour visuel
+// continu pendant toute cette attente (voir tryLogin/setInitialCode dans core/render.js),
+// plutôt que de laisser l'écran figé sans rien indiquer entre le clic et l'arrivée sur l'Accueil.
+let loginBusy = false;
+let loginBusyMessage = "";
 
 // ---------- Données ----------
 
