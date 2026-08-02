@@ -72,14 +72,6 @@ const API_HANDLERS = {
   uploadFoodtruckMenuImage: api_uploadFoodtruckMenuImage,   // Foodtrucks.gs
   addFoodtruckCatalog: api_addFoodtruckCatalog,             // FoodtrucksCatalog.gs
   deleteFoodtruckCatalog: api_deleteFoodtruckCatalog,       // FoodtrucksCatalog.gs
-  addRepasMenuItem: api_addRepasMenuItem,                   // Repas.gs
-  deleteRepasMenuItem: api_deleteRepasMenuItem,             // Repas.gs
-  addRepasTarif: api_addRepasTarif,                         // Repas.gs
-  deleteRepasTarif: api_deleteRepasTarif,                   // Repas.gs
-  setRepasPrevu: api_setRepasPrevu,                         // Repas.gs
-  addRepasFinance: api_addRepasFinance,                     // Repas.gs
-  deleteRepasFinance: api_deleteRepasFinance,               // Repas.gs
-  publishRepasActualite: api_publishRepasActualite,         // Repas.gs
 };
 
 // Toute action passe par ce try/catch : sans lui, une erreur non prévue dans un handler (ex:

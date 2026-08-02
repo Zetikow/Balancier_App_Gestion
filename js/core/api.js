@@ -40,10 +40,6 @@ async function fetchAll() {
     restaurantsMenus = (data.restaurantsMenus || []).slice(1).filter(r => r[0]);
     foodtrucks = (data.foodtrucks || []).slice(1).filter(r => r[0]);
     foodtrucksCatalog = (data.foodtrucksCatalog || []).slice(1).filter(r => r[0]);
-    repasMenu = (data.repasMenu || []).slice(1).filter(r => r[0]);
-    repasPrevu = (data.repasPrevu || []).slice(1).filter(r => r[0]);
-    repasTarifs = (data.repasTarifs || []).slice(1).filter(r => r[0]);
-    repasFinances = (data.repasFinances || []).slice(1).filter(r => r[0]);
     const parsedPE = parsePresenceEvenements(data.presenceEvenements || []);
     presenceEvenements = parsedPE.p;
     presenceJustifications = parsedPE.j;

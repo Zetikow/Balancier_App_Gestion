@@ -66,14 +66,6 @@ function api_getAll(ss, e) {
   const foodtrucks = (foodtrucksSheet && canManageFoodtrucks(callerRole)) ? foodtrucksSheet.getDataRange().getValues() : [];
   const foodtrucksCatalogSheet = ss.getSheetByName("FoodtrucksCatalog");
   const foodtrucksCatalog = (foodtrucksCatalogSheet && canManageFoodtrucks(callerRole)) ? foodtrucksCatalogSheet.getDataRange().getValues() : [];
-  const repasMenuSheet = ss.getSheetByName("RepasMenu");
-  const repasMenu = repasMenuSheet ? repasMenuSheet.getDataRange().getValues() : [];
-  const repasPrevuSheet = ss.getSheetByName("RepasPrevu");
-  const repasPrevu = repasPrevuSheet ? repasPrevuSheet.getDataRange().getValues() : [];
-  const repasTarifsSheet = ss.getSheetByName("RepasTarifs");
-  const repasTarifs = repasTarifsSheet ? repasTarifsSheet.getDataRange().getValues() : [];
-  const repasFinancesSheet = ss.getSheetByName("RepasFinances");
-  const repasFinances = (repasFinancesSheet && canManageRepas(callerRole)) ? repasFinancesSheet.getDataRange().getValues() : [];
 
-  return jsonOut({ ok: true, grid, comptes, presences, paiements, evenements, presenceEvenements, actualites, covoiturage, osteoSlots, osteoReservations, compositions, compositionsMeta, selections, selectionsMeta, benevoles, gouter, gouterOptions, tableMarque, maillots, cartes, cartesReponses, restaurants, restaurantsMenus, foodtrucks, foodtrucksCatalog, repasMenu, repasPrevu, repasTarifs, repasFinances });
+  return jsonOut({ ok: true, grid, comptes, presences, paiements, evenements, presenceEvenements, actualites, covoiturage, osteoSlots, osteoReservations, compositions, compositionsMeta, selections, selectionsMeta, benevoles, gouter, gouterOptions, tableMarque, maillots, cartes, cartesReponses, restaurants, restaurantsMenus, foodtrucks, foodtrucksCatalog });
 }

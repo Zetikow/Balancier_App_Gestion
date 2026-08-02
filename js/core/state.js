@@ -7,7 +7,7 @@
 const SESSION_KEY = "balancier-session"; // {nom, role, code, equipe}
 const APP_VERSION_KEY = "balancier-app-version";
 const LAST_USER_KEY = "balancier-last-user"; // simple mémorisation du dernier nom connecté sur cet appareil (pas le code)
-const APP_VERSION = "2026-08-03-1"; // À incrémenter à chaque mise à jour déployée
+const APP_VERSION = "2026-08-03-2"; // À incrémenter à chaque mise à jour déployée
 const SEASON_START = new Date(2026, 8, 1);  // 1er septembre 2026
 const SEASON_END = new Date(2027, 5, 30);   // 30 juin 2027
 
@@ -56,10 +56,6 @@ let restaurants = []; // [[nom], ...] (+ header row) — catalogue des restauran
 let restaurantsMenus = []; // [[id, restaurant, plat, prix], ...] (+ header row)
 let foodtrucks = []; // [[id, eventId, nom, prix, benefice, notes], ...] (+ header row) — réservé Admin/Coach/Salarié
 let foodtrucksCatalog = []; // [[nom, prixDefaut], ...] (+ header row) — liste des foodtrucks habituels, réservé Admin/Coach/Salarié
-let repasMenu = []; // [[id, nom], ...] (+ header row) — menu réutilisable du repas d'après-match
-let repasPrevu = []; // [[eventId, menuId], ...] (+ header row) — plats prévus pour un match donné
-let repasTarifs = []; // [[id, label, prix], ...] (+ header row) — tarifs réutilisables (ex: repas adulte/enfant)
-let repasFinances = []; // [[id, eventId, type, label, montant], ...] (+ header row) — type = "recette"|"depense"
 
 let session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
 if (session && !session.code) { session = null; localStorage.removeItem(SESSION_KEY); }
