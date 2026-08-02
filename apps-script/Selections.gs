@@ -15,6 +15,16 @@ function setupSelections() {
     sheet.getRange(1, 1, 1, 3).setFontWeight("bold");
     sheet.setFrozenRows(1);
   }
+  // Statut de publication aux joueurs/parents, même forme que CompositionsMeta (Compositions.gs) :
+  // une ligne par match, "Publie" = "1" une fois visible. Tant que non publiée, seul Coach/Admin
+  // voit qui est retenu (voir js/modules/presence.js, selectionIsPublished).
+  let metaSheet = ss.getSheetByName("SelectionsMeta");
+  if (!metaSheet) metaSheet = ss.insertSheet("SelectionsMeta");
+  if (metaSheet.getDataRange().getNumRows() <= 1) {
+    metaSheet.getRange(1, 1, 1, 2).setValues([["EventID", "Publie"]]);
+    metaSheet.getRange(1, 1, 1, 2).setFontWeight("bold");
+    metaSheet.setFrozenRows(1);
+  }
 }
 
 function canManageSelections(role) {
@@ -46,5 +56,53 @@ function api_setSelection(ss, e) {
     }
   }
   sheet.appendRow([eventId, nom, selectionne]);
+  return jsonOut({ ok: true });
+}
+
+// Publie (ou masque) la sélection aux joueurs/parents pour un match donné — feuille
+// "SelectionsMeta", même principe que api_publishComposition (Compositions.gs). Notifie
+// seulement au moment où ça PASSE à publié (jamais à une republication ni à une dépublication),
+// jamais bloquant pour la publication elle-même.
+function api_publishSelection(ss, e) {
+  const role = checkAuth(ss, e.parameter.authNom, e.parameter.authCode);
+  if (!role || !canManageSelections(role)) return jsonOut({ ok: false, error: "forbidden" });
+  setupSelections();
+  const eventId = e.parameter.eventId || e.parameter.matchId;
+  const publie = e.parameter.publie === "1" ? "1" : "";
+
+  const metaSheet = ss.getSheetByName("SelectionsMeta");
+  const data = metaSheet.getDataRange().getValues();
+  let wasAlreadyPublished = false;
+  let found = false;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === eventId) {
+      wasAlreadyPublished = data[i][1] === "1";
+      metaSheet.getRange(i + 1, 2).setValue(publie);
+      found = true;
+      break;
+    }
+  }
+  if (!found) metaSheet.appendRow([eventId, publie]);
+
+  // Notifie joueurs + parents + coach(s) seulement au moment où ça PASSE à publié — jamais
+  // bloquant pour la publication elle-même (voir pushTokensForEquipe, ajouté dans Push.gs avec
+  // cette fonctionnalité).
+  if (publie === "1" && !wasAlreadyPublished) {
+    try {
+      const evSheet = ss.getSheetByName("Evenements");
+      const evData = evSheet.getDataRange().getValues();
+      const evRow = evData.find(r => r[0] === eventId);
+      if (evRow) {
+        const equipe = evRow[6] || "SM1";
+        const adversaire = extractOpponentFromTitre(evRow[4]) || evRow[4] || "";
+        const dateStr = formatDateFr(evRow[1]);
+        const tokens = pushTokensForEquipe(ss, equipe, ["Joueur", "Coach"], true);
+        tokens.forEach(token => sendPushNotification(token, "📋 Sélection publiée", `La sélection de ${equipe} vs ${adversaire} (${dateStr}) est en ligne.`));
+      }
+    } catch (err) {
+      Logger.log("Erreur notif push sélection publiée : " + err);
+    }
+  }
+
   return jsonOut({ ok: true });
 }

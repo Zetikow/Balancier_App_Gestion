@@ -111,6 +111,62 @@ function sendPushToAll(title, body) {
   return sent;
 }
 
+// ===================================================================
+// HELPERS DE CIBLAGE — utilisés par les notifications push déclenchées depuis les autres
+// fichiers .gs (ex: Selections.gs pour la publication de la Sélection) pour retrouver le/les
+// jeton(s) push d'une ou plusieurs personnes. Toujours de simples lectures de la feuille
+// "Comptes" ; ne lèvent jamais d'erreur. Ajoutés avec la publication de la Sélection (avant ça,
+// ce fichier n'avait que l'envoi brut sendPushNotification/sendPushToAll, jamais utilisés avec un
+// ciblage par équipe) — même idiome que HBCB/ASHS (apps-script/Push.gs).
+// ===================================================================
+
+// Jeton push d'une personne précise, par son Nom exact (colonne "Nom" de Comptes). "" si la
+// personne n'existe pas ou n'a pas encore activé les notifications.
+function pushTokenForNom(ss, nom) {
+  const sheet = ss.getSheetByName("Comptes");
+  if (!sheet) return "";
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][COL_NOM]).trim() === String(nom).trim()) return data[i][COL_PUSHSUBIDS] || "";
+  }
+  return "";
+}
+
+// Jetons (dédupliqués) de toutes les personnes ayant un des rôles donnés (roleNames, ex:
+// ["Joueur","Coach"]) pour l'équipe précise, PLUS (si includeParents) les parents des joueurs de
+// cette équipe — un compte "Parent" stocke le NOM DE L'ENFANT dans le champ équipe de son rôle
+// (ex: "Parent:Thomas L."), pas un code d'équipe.
+// Simplification assumée par rapport à primaryEquipe() (js/core/state.js) : un joueur multi-équipes
+// est notifié pour chacune de ses équipes, pas seulement sa "principale" — mieux vaut notifier en
+// trop qu'oublier quelqu'un de concerné.
+function pushTokensForEquipe(ss, equipe, roleNames, includeParents) {
+  const sheet = ss.getSheetByName("Comptes");
+  if (!sheet) return [];
+  const comptes = sheet.getDataRange().getValues();
+  const tokens = new Set();
+  const joueurNoms = new Set();
+  for (let i = 1; i < comptes.length; i++) {
+    const row = comptes[i];
+    if (rowHasRole(row, "Joueur") && rowEquipesForRole(row, "Joueur").indexOf(equipe) !== -1) {
+      joueurNoms.add(row[COL_NOM]);
+    }
+    const token = row[COL_PUSHSUBIDS];
+    if (!token) continue;
+    const matches = roleNames.some(roleName => rowHasRole(row, roleName) && rowEquipesForRole(row, roleName).indexOf(equipe) !== -1);
+    if (matches) tokens.add(token);
+  }
+  if (includeParents) {
+    for (let i = 1; i < comptes.length; i++) {
+      const row = comptes[i];
+      const token = row[COL_PUSHSUBIDS];
+      if (!token || !rowHasRole(row, "Parent")) continue;
+      const enfants = rowEquipesForRole(row, "Parent");
+      if (enfants.some(nomEnfant => joueurNoms.has(nomEnfant))) tokens.add(token);
+    }
+  }
+  return Array.from(tokens);
+}
+
 // À exécuter manuellement depuis l'éditeur (menu déroulant > testPushNotification > Exécuter)
 // pour vérifier que tout fonctionne de bout en bout, une fois les 3 Propriétés du script
 // renseignées ET qu'au moins un compte a cliqué "🔔 Activer les notifications" dans l'appli

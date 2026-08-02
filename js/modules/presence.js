@@ -170,20 +170,32 @@ function renderPresencePage() {
   const defaultTeam = switcherTeams.includes(preferredTeam) ? preferredTeam : (switcherTeams[0] || "SM1");
   const activeTeam = (window.__presenceTeamView && switcherTeams.includes(window.__presenceTeamView)) ? window.__presenceTeamView : defaultTeam;
   const canManage = hasRole("Coach") || hasRole("Admin");
-  const view = (canManage && window.__presenceSubView === "selection") ? "selection" : "presence";
+  // Bénévole est un onglet de GESTION (Admin/Coach/Salarié), pas de l'auto-inscription par les
+  // comptes ayant eux-mêmes le rôle "Bénévole". Les événements Bénévole sont en plus CLUB-ENTIER,
+  // jamais filtrés par équipe, contrairement à Présence/Sélection — voir renderBenevoleSection.
+  const canSeeBenevoleTab = hasRole("Admin") || hasRole("Coach") || hasRole("Salarié");
+  let view = "presence";
+  if (canManage && window.__presenceSubView === "selection") view = "selection";
+  else if (canSeeBenevoleTab && window.__presenceSubView === "benevole") view = "benevole";
 
   let html = `<div class="page-title">Présence</div><div class="page-sub">Suivi des présences de l'équipe.</div>`;
-  html += renderTeamSwitcher(switcherTeams, activeTeam, "presence-team");
+  // Le sélecteur d'équipe n'a pas de sens pour Bénévole (club-entier) — masqué seulement pour
+  // cette sous-vue, Présence/Sélection restent par équipe.
+  if (view !== "benevole") html += renderTeamSwitcher(switcherTeams, activeTeam, "presence-team");
 
-  if (canManage) {
+  if (canManage || canSeeBenevoleTab) {
     html += `<div class="mode-tabs">
       <button type="button" class="mode-tab-btn ${view === 'presence' ? 'active' : ''}" data-presence-subview="presence">Présence</button>
-      <button type="button" class="mode-tab-btn ${view === 'selection' ? 'active' : ''}" data-presence-subview="selection">Sélection</button>
+      ${canManage ? `<button type="button" class="mode-tab-btn ${view === 'selection' ? 'active' : ''}" data-presence-subview="selection">Sélection</button>` : ""}
+      ${canSeeBenevoleTab ? `<button type="button" class="mode-tab-btn ${view === 'benevole' ? 'active' : ''}" data-presence-subview="benevole">Bénévole</button>` : ""}
     </div>`;
   }
 
   if (view === "selection") {
     return html + renderSelectionSection(activeTeam);
+  }
+  if (view === "benevole") {
+    return html + renderBenevoleSection();
   }
 
   const sorted = sortedEvenements().filter(ev => eventEquipe(ev) === activeTeam);
@@ -474,6 +486,126 @@ async function writeJustificationApi(eventId, nom, texte) {
   render();
 }
 
+// ===================== PRÉSENCE BÉNÉVOLE (club entier) =====================
+// Distinct de la présence habituelle : un onglet de GESTION (Admin/Coach/Salarié, voir
+// canSeeBenevoleTab dans renderPresencePage), pas une auto-inscription par les comptes ayant
+// eux-mêmes le rôle "Bénévole". CLUB-ENTIER : ni les événements ni la liste des bénévoles ne
+// sont filtrés par équipe (contrairement à Présence/Sélection) — feuille "Benevoles". Porté
+// depuis HBCB.
+
+function benevoleEntryFor(eventId, nom) {
+  return benevoles.find(r => r[0] === eventId && r[1] === nom) || null;
+}
+
+function benevoleCountFor(eventId) {
+  return benevoles.filter(r => r[0] === eventId && r[2] === "Oui").length;
+}
+
+function renderBenevoleSection() {
+  const evs = sortedEvenements().filter(ev => typeClass(ev[3]) === "benevole");
+  if (evs.length === 0) {
+    return `<div class="card muted">Aucun événement bénévole enregistré pour le club.</div>`;
+  }
+  let html = "";
+  evs.forEach(ev => { html += renderBenevoleEventCard(ev); });
+  html += renderPresenceBenevoleSheet();
+  return html;
+}
+
+function renderBenevoleEventCard(ev) {
+  const [id, , , , titre, lieu] = ev;
+  const d = eventDateObj(ev);
+  const isPast = d < new Date();
+  const displayTitre = titre || "Bénévole";
+  const count = benevoleCountFor(id);
+
+  return `<div class="ev-card" style="flex-direction:column; align-items:stretch; ${isPast ? 'opacity:0.6;' : ''}">
+    <div class="sheet-open-zone" style="display:flex; align-items:center; gap:12px;" data-open-presence-benevole="${id}">
+      <div class="ev-date"><div class="ev-day">${d.getDate()}</div><div class="ev-month">${d.toLocaleDateString("fr-FR", { month: "short" })}</div></div>
+      <div class="ev-divider"></div>
+      <div class="ev-info">
+        <div class="ev-header-row">
+          <div class="ev-title-big">${escapeHtml(displayTitre)}</div>
+          <span style="color:#33d17a; font-weight:800; font-size:13px;">${count} inscrit${count > 1 ? "s" : ""}</span>
+        </div>
+        <div class="ev-meta">${d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" })}${formatHeure(ev) ? " · " + formatHeure(ev) : ""}${lieu ? " · " + escapeHtml(lieu) : ""}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function setBenevoleApi(eventId, nom, present) {
+  const existing = benevoleEntryFor(eventId, nom);
+  if (present) {
+    if (existing) existing[2] = present; else benevoles.push([eventId, nom, present]);
+  } else if (existing) {
+    benevoles = benevoles.filter(r => r !== existing);
+  }
+  render();
+  try {
+    const params = new URLSearchParams({ action: "setBenevole", eventId, nom, present, authNom: session.nom, authCode: session.code });
+    await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+    isOnline = true;
+  } catch (err) { isOnline = false; }
+  render();
+}
+
+// ===================== FICHE PRÉSENCE BÉNÉVOLE (bottom sheet) =====================
+// Ouverte en tapant le corps d'une carte de la sous-vue "Bénévole" (voir window.__presBenevoleFor).
+// Gestion (Admin/Coach/Salarié, voir canManage ci-dessous) : ce sont eux qui inscrivent/
+// désinscrivent les bénévoles, pas un modèle self-service — même permission que côté serveur
+// (voir Benevoles.gs / api_setBenevole), pour ne pas donner un bouton qui échouerait. Liste des
+// bénévoles CLUB-ENTIÈRE (benevolesForClub), jamais filtrée par équipe.
+function renderPresenceBenevoleSheet() {
+  const id = window.__presBenevoleFor;
+  if (!id) return "";
+  const ev = evenements.find(e => e[0] === id);
+  if (!ev) return "";
+  const [, , , , titre, lieu] = ev;
+  const d = eventDateObj(ev);
+  const dayName = d.toLocaleDateString("fr-FR", { weekday: "long" });
+  const displayTitre = titre || "Bénévole";
+  const roster = benevolesForClub();
+  const count = benevoleCountFor(id);
+  const canManage = hasRole("Coach") || hasRole("Admin") || hasRole("Salarié");
+
+  let bodyHtml = `<div class="stat-bar-row">
+    <span style="color:#33d17a; font-weight:800;">${count} inscrit${count > 1 ? "s" : ""}</span>
+  </div>`;
+  if (roster.length === 0) {
+    bodyHtml += `<div class="muted">Aucun bénévole enregistré pour le club.</div>`;
+  } else {
+    roster.forEach(p => {
+      const entry = benevoleEntryFor(id, p);
+      const present = entry && entry[2] === "Oui";
+      const canToggle = canManage || p === session.nom;
+      bodyHtml += `<div class="pres-card">
+        <div class="pres-card-row">
+          <div class="cn-avatar pres-avatar">${getInitials(p)}</div>
+          <div class="pres-card-name">${p}</div>
+          ${canToggle
+            ? `<button type="button" class="toggle-btn ${present ? 'present' : ''}" data-toggle-benevole-player="${id}|||${p}">${present ? "Inscrit" : "S'inscrire"}</button>`
+            : `<span class="muted" style="font-size:11px;">${present ? "Inscrit" : "Non inscrit"}</span>`}
+        </div>
+      </div>`;
+    });
+  }
+
+  return `<div class="sheet-overlay open" data-close-sheet="presBenevoleFor">
+    <div class="sheet-scrim" data-close-sheet="presBenevoleFor"></div>
+    <div class="sheet">
+      <div class="sheet-close" data-close-sheet="presBenevoleFor">✕</div>
+      <div class="sheet-grab"></div>
+      <div class="sheet-hero">
+        <div class="sheet-hero-eyebrow">Bénévole</div>
+        <h2>${escapeHtml(displayTitre)}</h2>
+        <p>${dayName}${formatHeure(ev) ? " · " + formatHeure(ev) : ""}${lieu ? " · " + escapeHtml(lieu) : ""}</p>
+      </div>
+      <div class="sheet-body">${bodyHtml}</div>
+    </div>
+  </div>`;
+}
+
 function attachPresenceEvents() {
   document.querySelectorAll("[data-open-presence-roster]").forEach(el => {
     el.onclick = () => { vibrate(); window.__presRosterFor = el.dataset.openPresenceRoster; render(); };
@@ -533,6 +665,20 @@ function attachPresenceEvents() {
       const entry = selectionEntryFor(eventId, nom);
       const selected = entry && entry[2] === "Oui";
       setSelectionApi(eventId, nom, selected ? "" : "Oui");
+    };
+  });
+
+  document.querySelectorAll("[data-open-presence-benevole]").forEach(el => {
+    el.onclick = () => { vibrate(); window.__presBenevoleFor = el.dataset.openPresenceBenevole; render(); };
+  });
+
+  document.querySelectorAll("[data-toggle-benevole-player]").forEach(el => {
+    el.onclick = () => {
+      vibrate();
+      const [eventId, nom] = el.dataset.toggleBenevolePlayer.split("|||");
+      const entry = benevoleEntryFor(eventId, nom);
+      const present = entry && entry[2] === "Oui";
+      setBenevoleApi(eventId, nom, present ? "" : "Oui");
     };
   });
 
