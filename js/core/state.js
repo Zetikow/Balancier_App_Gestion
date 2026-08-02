@@ -47,8 +47,10 @@ let selections = []; // [[eventId, nom, selectionne], ...] — qui est retenu po
 let gouter = []; // [[eventId, nom, quoi], ...] (+ header row) — matchs à domicile
 let tableMarque = []; // [[eventId, nom, disponible], ...] (+ header row) — domicile et extérieur
 let maillots = []; // [[eventId, nom, pris], ...] (+ header row) — nombre de fois = compte des lignes par joueur
-let cartes = []; // [[id, eventId, type, titre, optionsJSON, total], ...] (+ header row) — cartes "repas"/"apero" sur un événement SM1
-let cartesReponses = []; // [[carteId, nom, champ, valeur], ...] (+ header row) — champ = "vote"|"choix"|"participe"
+let cartes = []; // [[id, eventId, type, titre, optionsJSON, total, restaurant], ...] (+ header row) — cartes "repas"/"apero" sur un événement SM1
+let cartesReponses = []; // [[carteId, nom, champ, valeur], ...] (+ header row) — champ = "vote"|"choix"|"participe"|"plat"
+let restaurants = []; // [[nom], ...] (+ header row) — catalogue des restaurants habituels (carte "repas")
+let restaurantsMenus = []; // [[id, restaurant, plat, prix], ...] (+ header row)
 let foodtrucks = []; // [[id, eventId, nom, prix, benefice, notes], ...] (+ header row) — réservé Admin/Coach/Salarié
 let foodtrucksCatalog = []; // [[nom, prixDefaut], ...] (+ header row) — liste des foodtrucks habituels, réservé Admin/Coach/Salarié
 let repasMenu = []; // [[id, nom], ...] (+ header row) — menu réutilisable du repas d'après-match

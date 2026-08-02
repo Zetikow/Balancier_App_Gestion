@@ -33,6 +33,8 @@ async function fetchAll() {
     maillots = (data.maillots || []).slice(1).filter(r => r[0]);
     cartes = (data.cartes || []).slice(1).filter(r => r[0]);
     cartesReponses = (data.cartesReponses || []).slice(1).filter(r => r[0]);
+    restaurants = (data.restaurants || []).slice(1).filter(r => r[0]);
+    restaurantsMenus = (data.restaurantsMenus || []).slice(1).filter(r => r[0]);
     foodtrucks = (data.foodtrucks || []).slice(1).filter(r => r[0]);
     foodtrucksCatalog = (data.foodtrucksCatalog || []).slice(1).filter(r => r[0]);
     repasMenu = (data.repasMenu || []).slice(1).filter(r => r[0]);

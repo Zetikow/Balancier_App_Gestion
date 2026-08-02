@@ -17,7 +17,13 @@ const GESTION_MATCHS_SECTIONS = [
   { id: "maillots", label: "Maillots" },
   { id: "foodtruck", label: "Foodtrucks" },
   { id: "repas", label: "Repas" },
+  { id: "restaurants", label: "Restaurants" },
 ];
+
+// Catalogue restaurants (carte "Repas" SM1, voir cartes.js) : réservé Admin.
+function canManageRestaurants() {
+  return hasRole("Admin");
+}
 
 // Suivi financier des foodtrucks : réservé Admin/Coach/Salarié, pas un onglet joueur/parent.
 function canManageFoodtrucks() {
@@ -32,7 +38,11 @@ function canManageRepas() {
 }
 
 function gestionMatchsSectionsForRole() {
-  return GESTION_MATCHS_SECTIONS.filter(s => (s.id !== "foodtruck" || canManageFoodtrucks()) && (s.id !== "repas" || canManageRepas()));
+  return GESTION_MATCHS_SECTIONS.filter(s =>
+    (s.id !== "foodtruck" || canManageFoodtrucks()) &&
+    (s.id !== "repas" || canManageRepas()) &&
+    (s.id !== "restaurants" || canManageRestaurants())
+  );
 }
 
 const GESTION_MATCHS_USAGE_KEY = "balancier-gestion-matchs-usage";
@@ -510,8 +520,8 @@ function renderGestionMatchsPage() {
   const activeTeam = (window.__covoitTeamView && teams.includes(window.__covoitTeamView)) ? window.__covoitTeamView : teams[0];
   const sortedSections = gestionMatchsSectionsSorted();
   const section = sortedSections.some(s => s.id === window.__gestionMatchsSection) ? window.__gestionMatchsSection : (sortedSections[0] ? sortedSections[0].id : "covoiturage");
-  // Foodtrucks et repas d'après-match ne concernent aucune équipe en particulier.
-  const needsTeam = section !== "foodtruck" && section !== "repas";
+  // Foodtrucks, repas d'après-match et catalogue restaurants ne concernent aucune équipe en particulier.
+  const needsTeam = section !== "foodtruck" && section !== "repas" && section !== "restaurants";
 
   let html = `<div class="page-title">Gestion des matchs</div><div class="page-sub">Covoiturage, goûter, table de marque et maillots${needsTeam ? " — équipe " + escapeHtml(activeTeam) : ""}</div>`;
   if (needsTeam) html += renderTeamSwitcher(teams, activeTeam, "covoit-team");
@@ -525,6 +535,7 @@ function renderGestionMatchsPage() {
   else if (section === "maillots") html += renderMaillotsSection(activeTeam);
   else if (section === "foodtruck" && canManageFoodtrucks()) html += renderFoodtruckSection();
   else if (section === "repas" && canManageRepas()) html += renderRepasSection();
+  else if (section === "restaurants" && canManageRestaurants()) html += renderRestaurantsSection();
 
   if (window.__gmDetailFor) html += renderGestionMatchsDetailSheet();
   if (window.__repasDetailFor) html += renderRepasDetailSheet();
@@ -1364,6 +1375,8 @@ function attachGestionMatchsEvents() {
       }
     };
   });
+
+  attachRestaurantsEvents(); // voir cartes.js — onglet Restaurants (catalogue resto/menus)
 }
 
 // idPrefix : préfixe des ids générés par renderFoodtruckNomSelect.
