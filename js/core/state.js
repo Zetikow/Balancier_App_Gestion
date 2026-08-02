@@ -7,7 +7,7 @@
 const SESSION_KEY = "balancier-session"; // {nom, role, code, equipe}
 const APP_VERSION_KEY = "balancier-app-version";
 const LAST_USER_KEY = "balancier-last-user"; // simple mémorisation du dernier nom connecté sur cet appareil (pas le code)
-const APP_VERSION = "2026-08-03-2"; // À incrémenter à chaque mise à jour déployée
+const APP_VERSION = "2026-08-03-3"; // À incrémenter à chaque mise à jour déployée
 const SEASON_START = new Date(2026, 8, 1);  // 1er septembre 2026
 const SEASON_END = new Date(2027, 5, 30);   // 30 juin 2027
 
@@ -238,11 +238,15 @@ function rosterForEquipe(equipe) {
   return comptes.slice(1).filter(c => rowHasRole(c, "Joueur") && rowEquipesForRole(c, "Joueur").indexOf(equipe) !== -1).map(c => c[0]);
 }
 
-// Même idiome que rosterForEquipe mais pour le rôle "Bénévole" — sert à lister tous les comptes
-// bénévoles du club, PEU IMPORTE leur équipe (les événements Bénévole sont club-entier, jamais
-// filtrés par équipe — voir renderBenevoleSection dans presence.js).
+// Liste de TOUS les comptes du club, quel que soit leur rôle (Joueur, Coach, Admin, Salarié,
+// Bénévole...) — n'importe qui parmi les rôles actifs aujourd'hui peut se déclarer présent à un
+// événement Bénévole, ce n'est pas réservé aux comptes ayant spécifiquement le rôle "Bénévole".
+// Exception prévue à l'avenir : le futur rôle "Supporter" ne devra PAS apparaître dans cette
+// liste (à exclure explicitement le jour où ce rôle sera créé). PEU IMPORTE l'équipe (les
+// événements Bénévole sont club-entier, jamais filtrés par équipe — voir renderBenevoleSection
+// dans presence.js).
 function benevolesForClub() {
-  return comptes.slice(1).filter(c => rowHasRole(c, "Bénévole")).map(c => c[0]);
+  return comptes.slice(1).map(c => c[0]);
 }
 
 // Équipes qu'un compte peut consulter : toutes celles de ses rôles cumulés (ex: un joueur
