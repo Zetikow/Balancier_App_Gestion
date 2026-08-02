@@ -476,6 +476,23 @@ body.login-mode .login-wrap { flex: 1; min-height: 0; }
 
 .composition-ghost { position: fixed; top: 0; left: 0; transform: translate(-50%, -50%) scale(1.1); z-index: 999; pointer-events: none; opacity: 0.92; }
 .composition-drop-hover { box-shadow: 0 0 0 3px #33d17a !important; }
+
+/* ===== Cartes d'événement (repas/apéro, voir cartes.js) — accent gold pour "repas", accent
+   bleu pour "apero", pour que la carte ressorte nettement du reste de l'événement plutôt que
+   de se fondre dedans (fond teinté + liseré de couleur + icône en pastille). */
+.carte-box { margin-top: 10px; background: linear-gradient(135deg, rgba(var(--gold-rgb),0.14), rgba(var(--gold-rgb),0.03)); border-radius: 12px; padding: 12px; border: 1px solid rgba(var(--gold-rgb),0.4); border-left: 3px solid var(--gold); }
+.carte-box.carte-apero { background: linear-gradient(135deg, rgba(var(--accent-rgb),0.14), rgba(var(--accent-rgb),0.03)); border-color: rgba(var(--accent-rgb),0.4); border-left-color: var(--accent2); }
+.carte-box.carte-collapsed { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; }
+.carte-collapsed-text { flex: 1; min-width: 0; }
+.carte-collapsed-text .carte-title { margin-bottom: 2px; }
+.carte-summary { font-size: 11px; color: #a8adba; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carte-chevron { font-size: 10px; color: #8a92a8; flex-shrink: 0; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: 1px solid #232a3f; border-radius: 8px; }
+.carte-head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; cursor: pointer; }
+.carte-icon { font-size: 16px; flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(var(--gold-rgb),0.22); }
+.carte-box.carte-apero .carte-icon { background: rgba(var(--accent-rgb),0.22); }
+.carte-title { flex: 1; font-size: 13px; font-weight: 800; color: #fff; letter-spacing: 0.2px; }
+.carte-del { color: #ff6b6b; font-size: 12px; cursor: pointer; padding: 2px 5px; flex-shrink: 0; }
+
 .ev-date { text-align: center; flex-shrink: 0; width: 46px; }
 .ev-day { font-size: 22px; font-weight: 900; color: #fff; line-height: 1; }
 .ev-month { font-size: 10px; color: var(--accent); text-transform: uppercase; font-weight: 700; margin-top: 3px; }
