@@ -244,6 +244,42 @@ function selectionCountFor(eventId) {
   return selections.filter(r => r[0] === eventId && r[2] === "Oui").length;
 }
 
+// ===================== PUBLICATION SÉLECTION (feuille "SelectionsMeta") =====================
+// Même principe que compositionIsPublished (composition.js/CompositionsMeta) : la sélection en
+// cours reste invisible aux joueurs tant que le coach n'a pas cliqué "Publier la sélection" dans
+// la fiche (voir renderPresenceSelectionSheet). Une fois publiée, deux effets côté joueur :
+// - il peut taper la carte du match pour voir qui est retenu (renderSelectionCardButton /
+//   renderPresenceSelectionViewSheet), en lecture seule ;
+// - son toggle Présent/Absent habituel sur CET événement est remplacé par un badge Sélectionné/
+//   Non sélectionné (voir selectionStatusFor, utilisé depuis agenda.js).
+function selectionIsPublished(matchId) {
+  const row = selectionsMeta.find(r => r[0] === matchId);
+  return !!(row && row[1] === "1");
+}
+
+// Null si pas concerné (pas un match, pas publié, ou la personne n'est pas dans l'effectif de
+// l'équipe de ce match) ; sinon "selected" ou "not_selected".
+function selectionStatusFor(ev, nom) {
+  if (typeClass(ev[3]) !== "match") return null;
+  const matchId = ev[0];
+  if (!selectionIsPublished(matchId)) return null;
+  const equipe = eventEquipe(ev);
+  if (!rosterForEquipe(equipe).includes(nom)) return null;
+  const entry = selectionEntryFor(matchId, nom);
+  return (entry && entry[2] === "Oui") ? "selected" : "not_selected";
+}
+
+// Bouton "Voir la sélection" sur la carte d'un match (agenda.js), une fois publiée — même
+// principe que renderCompositionCardButtons (composition.js), mais Coach/Admin ne le voient pas
+// ici : ils gèrent déjà depuis l'onglet Sélection de Présence (renderPresenceSelectionSheet).
+function renderSelectionCardButton(ev) {
+  if (typeClass(ev[3]) !== "match") return "";
+  const matchId = ev[0];
+  if (hasRole("Coach") || hasRole("Admin")) return "";
+  if (!selectionIsPublished(matchId)) return "";
+  return `<button type="button" class="composition-card-btn view" data-open-presence-selection-view="${escapeHtml(matchId)}">👥 Voir la sélection</button>`;
+}
+
 function renderSelectionSection(activeTeam) {
   const matches = sortedEvenements().filter(ev => eventEquipe(ev) === activeTeam && typeClass(ev[3]) === "match");
   if (matches.length === 0) {
@@ -262,6 +298,7 @@ function renderSelectionEventCard(ev) {
   const displayTitre = formatMatchDisplay(titre, lieu).label || titre || "Match";
   const count = selectionCountFor(id);
   const countColor = count >= SELECTION_MAX_PLAYERS ? "#ff5a5a" : "#33d17a";
+  const published = selectionIsPublished(id);
 
   return `<div class="ev-card" style="flex-direction:column; align-items:stretch; ${isPast ? 'opacity:0.6;' : ''}">
     <div class="sheet-open-zone" style="display:flex; align-items:center; gap:12px;" data-open-presence-selection="${id}">
@@ -272,7 +309,7 @@ function renderSelectionEventCard(ev) {
           <div class="ev-title-big">${escapeHtml(displayTitre)}</div>
           <span style="color:${countColor}; font-weight:800; font-size:13px;">${count}/${SELECTION_MAX_PLAYERS}</span>
         </div>
-        <div class="ev-meta">${d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" })}${formatHeure(ev) ? " · " + formatHeure(ev) : ""}</div>
+        <div class="ev-meta">${d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" })}${formatHeure(ev) ? " · " + formatHeure(ev) : ""}${published ? ` · <span style="color:var(--accent2); font-weight:700;">Publiée</span>` : ""}</div>
       </div>
     </div>
   </div>`;
@@ -292,6 +329,19 @@ async function setSelectionApi(eventId, nom, selectionne) {
     isOnline = true;
   } catch (err) { isOnline = false; }
   render();
+}
+
+// Rend (ou masque) la sélection visible aux joueurs/parents — action séparée du choix des 12,
+// même principe que compositionPublishApi (composition.js). Le serveur envoie la notification
+// push (joueurs sélectionnés + non sélectionnés + coach(s) de l'équipe) uniquement au moment où
+// ça PASSE à publié, jamais bloquant pour la publication elle-même — voir api_publishSelection.
+async function selectionPublishApi(matchId, publie) {
+  try {
+    const params = new URLSearchParams({ action: "publishSelection", matchId, publie: publie ? "1" : "0", authNom: session.nom, authCode: session.code });
+    await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+    showToast(publie ? "Sélection publiée aux joueurs" : "Sélection masquée", "success");
+    await fetchAll();
+  } catch (err) { isOnline = false; showToast("Échec de l'action", "error"); render(); }
 }
 
 function renderPresenceEventCard(ev, isPast, activeTeam) {
@@ -346,9 +396,9 @@ function renderPresenceRosterSheet(activeTeam) {
       <div class="pres-card-row">
         <div class="cn-avatar pres-avatar">${getInitials(r.p)}</div>
         <div class="pres-card-name">${r.p}</div>
-        <div class="toggle-group">
-          <button class="toggle-btn ${r.val === 'Oui' ? 'present' : ''}" data-mark-presence="${id}" data-mark-player="${r.p}" data-mark-val="1">Oui</button>
-          <button class="toggle-btn ${r.val === 'Non' ? 'absent' : ''}" data-mark-presence="${id}" data-mark-player="${r.p}" data-mark-val="0">Non</button>
+        <div class="pres-toggle">
+          <button type="button" class="pres-toggle-option ${r.val === 'Oui' ? 'active' : ''}" data-mark-presence="${id}" data-mark-player="${r.p}" data-mark-val="1">Oui</button>
+          <button type="button" class="pres-toggle-option ${r.val === 'Non' ? 'active' : ''}" data-mark-presence="${id}" data-mark-player="${r.p}" data-mark-val="0">Non</button>
         </div>
       </div>
       ${r.val === "Non" && justif ? `<div class="justif-note"><b>Motif :</b> ${escapeHtml(justif)}</div>` : ""}
@@ -384,6 +434,7 @@ function renderPresenceSelectionSheet(activeTeam) {
   const roster = rosterForEquipe(activeTeam || "SM1");
   const count = selectionCountFor(id);
   const countColor = count >= SELECTION_MAX_PLAYERS ? "#ff5a5a" : "#33d17a";
+  const published = selectionIsPublished(id);
 
   let bodyHtml = `<div class="stat-bar-row">
     <span style="color:${countColor}; font-weight:800;">${count}/${SELECTION_MAX_PLAYERS} sélectionnés</span>
@@ -403,6 +454,14 @@ function renderPresenceSelectionSheet(activeTeam) {
       </div>`;
     });
   }
+  // Publication : une fois les 12 choisis, le coach rend la sélection visible aux joueurs (bouton
+  // toujours accessible, pas seulement à 12/12 — comme la composition, qui n'impose pas non plus
+  // d'effectif complet avant publication). Voir selectionPublishApi / api_publishSelection.
+  bodyHtml += `<div class="composition-footer" style="margin-top:14px;">
+    <button type="button" class="btn ${published ? "danger" : ""}" data-selection-publish-toggle="${id}" data-selection-published="${published ? "1" : "0"}">
+      ${published ? "Masquer aux joueurs" : "Publier la sélection"}
+    </button>
+  </div>`;
 
   return `<div class="sheet-overlay open" data-close-sheet="presSelectionFor">
     <div class="sheet-scrim" data-close-sheet="presSelectionFor"></div>
@@ -410,7 +469,55 @@ function renderPresenceSelectionSheet(activeTeam) {
       <div class="sheet-close" data-close-sheet="presSelectionFor">✕</div>
       <div class="sheet-grab"></div>
       <div class="sheet-hero">
-        <div class="sheet-hero-eyebrow">Sélection</div>
+        <div class="sheet-hero-eyebrow">Sélection${published ? " · Publiée" : ""}</div>
+        <h2>${escapeHtml(displayTitre)}</h2>
+        <p>${dayName}${formatHeure(ev) ? " · " + formatHeure(ev) : ""}${lieu ? " · " + escapeHtml(lieu) : ""}</p>
+      </div>
+      <div class="sheet-body">${bodyHtml}</div>
+    </div>
+  </div>`;
+}
+
+// ===================== FICHE SÉLECTION — LECTURE SEULE (JOUEURS/PARENTS) =====================
+// Ouverte en tapant "Voir la sélection" sur la carte d'un match (agenda.js, voir
+// renderSelectionCardButton), jamais avant publication — voir aussi selectionIsPublished, revérifié
+// ici en plus du bouton qui ne s'affiche pas, par sécurité si l'état venait à changer entre-temps.
+function renderPresenceSelectionViewSheet() {
+  const id = window.__presSelectionViewFor;
+  if (!id) return "";
+  const ev = evenements.find(e => e[0] === id);
+  if (!ev || !selectionIsPublished(id)) return "";
+  const [, , , , titre, lieu] = ev;
+  const equipe = eventEquipe(ev);
+  const d = eventDateObj(ev);
+  const dayName = d.toLocaleDateString("fr-FR", { weekday: "long" });
+  const displayTitre = formatMatchDisplay(titre, lieu).label || titre || "Match";
+  const roster = rosterForEquipe(equipe);
+  const selected = roster.filter(p => { const entry = selectionEntryFor(id, p); return entry && entry[2] === "Oui"; });
+  const notSelected = roster.filter(p => !selected.includes(p));
+
+  const rosterRow = (p, isSelected) => `<div class="pres-card">
+    <div class="pres-card-row">
+      <div class="cn-avatar pres-avatar">${getInitials(p)}</div>
+      <div class="pres-card-name">${p}</div>
+      <span style="${isSelected ? "color:var(--accent2); font-weight:700;" : "color:#8a92a8; font-weight:600;"} font-size:11px;">${isSelected ? "✅ Sélectionné" : "Non sélectionné"}</span>
+    </div>
+  </div>`;
+
+  let bodyHtml = `<div class="section-h" style="margin-bottom:6px;">Sélectionnés (${selected.length}/${SELECTION_MAX_PLAYERS})</div>`;
+  bodyHtml += selected.length === 0 ? `<div class="muted">Aucun joueur retenu pour l'instant.</div>` : selected.map(p => rosterRow(p, true)).join("");
+  if (notSelected.length > 0) {
+    bodyHtml += `<div class="section-h" style="margin:14px 0 6px;">Non sélectionnés</div>`;
+    bodyHtml += notSelected.map(p => rosterRow(p, false)).join("");
+  }
+
+  return `<div class="sheet-overlay open" data-close-sheet="presSelectionViewFor">
+    <div class="sheet-scrim" data-close-sheet="presSelectionViewFor"></div>
+    <div class="sheet">
+      <div class="sheet-close" data-close-sheet="presSelectionViewFor">✕</div>
+      <div class="sheet-grab"></div>
+      <div class="sheet-hero">
+        <div class="sheet-hero-eyebrow">Sélection · Publiée</div>
         <h2>${escapeHtml(displayTitre)}</h2>
         <p>${dayName}${formatHeure(ev) ? " · " + formatHeure(ev) : ""}${lieu ? " · " + escapeHtml(lieu) : ""}</p>
       </div>
@@ -666,6 +773,19 @@ function attachPresenceEvents() {
       const selected = entry && entry[2] === "Oui";
       setSelectionApi(eventId, nom, selected ? "" : "Oui");
     };
+  });
+
+  document.querySelectorAll("[data-selection-publish-toggle]").forEach(el => {
+    el.onclick = () => {
+      vibrate();
+      const matchId = el.dataset.selectionPublishToggle;
+      const currentlyPublished = el.dataset.selectionPublished === "1";
+      selectionPublishApi(matchId, !currentlyPublished);
+    };
+  });
+
+  document.querySelectorAll("[data-open-presence-selection-view]").forEach(el => {
+    el.onclick = () => { vibrate(); window.__presSelectionViewFor = el.dataset.openPresenceSelectionView; render(); };
   });
 
   document.querySelectorAll("[data-open-presence-benevole]").forEach(el => {
