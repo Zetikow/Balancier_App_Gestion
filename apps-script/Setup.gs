@@ -29,6 +29,7 @@ function setup() {
   setupTableMarque();
   setupMaillots();
   setupCartes();
+  setupRestaurants();
   setupFoodtrucks();
   setupFoodtrucksCatalog();
   setupRepas();

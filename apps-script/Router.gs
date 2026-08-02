@@ -54,9 +54,14 @@ const API_HANDLERS = {
   addCarte: api_addCarte,                                   // Cartes.gs
   deleteCarte: api_deleteCarte,                             // Cartes.gs
   setCarteTotal: api_setCarteTotal,                         // Cartes.gs
+  setCarteRestaurant: api_setCarteRestaurant,               // Cartes.gs
   addCarteOption: api_addCarteOption,                       // Cartes.gs
   removeCarteOption: api_removeCarteOption,                 // Cartes.gs
   setCarteReponse: api_setCarteReponse,                     // Cartes.gs
+  addRestaurant: api_addRestaurant,                         // Restaurants.gs
+  deleteRestaurant: api_deleteRestaurant,                   // Restaurants.gs
+  addRestaurantMenuItem: api_addRestaurantMenuItem,         // Restaurants.gs
+  deleteRestaurantMenuItem: api_deleteRestaurantMenuItem,   // Restaurants.gs
   addFoodtruck: api_addFoodtruck,                           // Foodtrucks.gs
   updateFoodtruck: api_updateFoodtruck,                     // Foodtrucks.gs
   deleteFoodtruck: api_deleteFoodtruck,                     // Foodtrucks.gs
