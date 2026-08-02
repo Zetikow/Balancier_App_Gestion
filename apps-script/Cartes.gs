@@ -92,6 +92,22 @@ function api_setCarteTotal(ss, e) {
   return jsonOut({ ok: false, error: "not_found" });
 }
 
+// Coach/Admin uniquement : renomme une carte après création (le titre n'est pas modifiable
+// autrement — avant, une faute de frappe imposait de supprimer la carte et d'en recréer une).
+function api_setCarteTitre(ss, e) {
+  const role = checkAuth(ss, e.parameter.authNom, e.parameter.authCode);
+  if (!role || !canManageCartes(role)) return jsonOut({ ok: false, error: "forbidden" });
+  const sheet = ss.getSheetByName("Cartes");
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === e.parameter.carteId) {
+      sheet.getRange(i + 1, 4).setValue(e.parameter.titre || "");
+      return jsonOut({ ok: true });
+    }
+  }
+  return jsonOut({ ok: false, error: "not_found" });
+}
+
 // Coach/Admin uniquement : fige (ou change) le restaurant d'une carte "repas" — voir
 // Restaurants.gs pour le catalogue. Remplace l'ancien sondage à plusieurs choix.
 function api_setCarteRestaurant(ss, e) {

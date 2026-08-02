@@ -32,12 +32,25 @@ function renderCarteCollapsed(id, icon, titre, summary) {
   </div>`;
 }
 
+// En édition du titre (window.__carteEditTitre[id], voir attachCartesEvents), le chevron et le
+// bouton supprimer disparaissent au profit d'un champ + bouton valider, même motif que
+// carte-propose — pour ne pas supprimer une carte par erreur en voulant juste la renommer.
 function carteHeadHtml(id, icon, titre, canManage) {
+  if (canManage && window.__carteEditTitre && window.__carteEditTitre[id]) {
+    return `<div class="carte-head">
+      <span class="carte-icon">${icon}</span>
+      <div class="carte-propose" style="flex:1; margin:0;">
+        <input type="text" id="carte-title-edit-${escapeHtml(id)}" value="${escapeHtml(titre)}" />
+        <button type="button" class="btn secondary" style="width:auto; padding:8px 12px;" data-save-carte-titre="${escapeHtml(id)}">✓</button>
+      </div>
+      <span class="carte-del" data-cancel-carte-titre="${escapeHtml(id)}">✕</span>
+    </div>`;
+  }
   return `<div class="carte-head" data-toggle-carte="${escapeHtml(id)}">
     <span class="carte-icon">${icon}</span>
     <span class="carte-title">${escapeHtml(titre)}</span>
     <span class="carte-chevron">▴</span>
-    ${canManage ? `<span class="carte-del" data-delete-carte="${escapeHtml(id)}">✕</span>` : ""}
+    ${canManage ? `<span class="carte-edit" data-edit-carte-titre="${escapeHtml(id)}">✏️</span><span class="carte-del" data-delete-carte="${escapeHtml(id)}">✕</span>` : ""}
   </div>`;
 }
 
@@ -91,6 +104,17 @@ async function setCarteRestaurantApi(carteId, restaurant) {
     const params = new URLSearchParams({ action: "setCarteRestaurant", carteId, restaurant, authNom: session.nom, authCode: session.code });
     await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
     await fetchAll();
+  } catch (err) { isOnline = false; render(); }
+}
+
+async function setCarteTitreApi(carteId, titre) {
+  const carte = cartes.find(c => c[0] === carteId);
+  if (carte) carte[3] = titre;
+  if (window.__carteEditTitre) delete window.__carteEditTitre[carteId];
+  render();
+  try {
+    const params = new URLSearchParams({ action: "setCarteTitre", carteId, titre, authNom: session.nom, authCode: session.code });
+    await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
   } catch (err) { isOnline = false; render(); }
 }
 
@@ -321,6 +345,37 @@ function attachCartesEvents() {
     el.onclick = (e) => {
       e.stopPropagation();
       if (confirm("Supprimer cette carte ?")) deleteCarteApi(el.dataset.deleteCarte);
+    };
+  });
+
+  document.querySelectorAll("[data-edit-carte-titre]").forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const id = el.dataset.editCarteTitre;
+      window.__carteEditTitre = window.__carteEditTitre || {};
+      window.__carteEditTitre[id] = true;
+      render();
+      const input = document.getElementById(`carte-title-edit-${id}`);
+      if (input) { input.focus(); input.select(); }
+    };
+  });
+
+  document.querySelectorAll("[data-cancel-carte-titre]").forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const id = el.dataset.cancelCarteTitre;
+      if (window.__carteEditTitre) delete window.__carteEditTitre[id];
+      render();
+    };
+  });
+
+  document.querySelectorAll("[data-save-carte-titre]").forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const id = el.dataset.saveCarteTitre;
+      const input = document.getElementById(`carte-title-edit-${id}`);
+      const titre = input ? input.value.trim() : "";
+      if (titre) setCarteTitreApi(id, titre);
     };
   });
 
