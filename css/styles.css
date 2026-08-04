@@ -754,7 +754,27 @@ body.login-mode .login-wrap { flex: 1; min-height: 0; }
 .mesjoueurs-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #1a2030; }
 .mesjoueurs-row:last-child { border-bottom: none; }
 .mesjoueurs-name { flex: 1; font-size: 12.5px; font-weight: 700; color: #e8e8ee; }
-.add-toggle { width: 100%; padding: 11px; border-radius: 12px; border: 1px dashed #2f3a52; background: transparent; color: var(--accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+/* Vrai bouton plein : l'ancien style (bordure en pointillés, fond transparent) se lisait comme
+   une zone de saisie/dépôt plutôt que comme un bouton cliquable. Fond teinté + bordure pleine +
+   retour au toucher, pour qu'on comprenne immédiatement que ça s'appuie. */
+.add-toggle { width: 100%; padding: 13px; border-radius: 12px; border: 1px solid rgba(var(--accent-rgb),0.5); background: rgba(var(--accent-rgb),0.16); color: var(--accent2); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: transform 0.12s, filter 0.15s; }
+.add-toggle:active, .add-toggle.tap-active { transform: scale(0.97); filter: brightness(1.25); }
+/* Variante compacte pour les boutons placés dans une carte étroite (ex: carte Poste, affichée
+   sur une demi-largeur) — sans ça le libellé passe sur deux lignes et le bouton paraît lourd. */
+.add-toggle.compact { padding: 9px 8px; font-size: 10.5px; letter-spacing: 0.2px; margin-bottom: 0; }
+
+/* Bouton d'accès à une autre page (ex: "Gestion des comptes" depuis Profil) — dégradé plein
+   comme .btn pour être repérable en haut de page, mais en disposition icône + libellé + chevron
+   pour se lire comme une NAVIGATION et non comme une validation de formulaire. */
+.page-action-btn { width: 100%; display: flex; align-items: center; gap: 11px; padding: 14px 16px; border-radius: 14px; border: none; background: var(--grad); color: #fff; cursor: pointer; font-family: 'DM Sans', sans-serif; text-align: left; margin-bottom: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.35); transition: transform 0.12s, filter 0.15s; }
+.page-action-btn:active, .page-action-btn.tap-active { transform: scale(0.97); filter: brightness(0.92); }
+.page-action-btn .pab-icon { font-size: 17px; flex-shrink: 0; }
+.page-action-btn .pab-text { flex: 1; min-width: 0; }
+/* display:block indispensable : ce sont des <span> (donc inline par défaut), sans quoi le
+   sous-titre se colle à la suite du titre sur la même ligne au lieu de passer dessous. */
+.page-action-btn .pab-title { display: block; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; line-height: 1.2; }
+.page-action-btn .pab-sub { display: block; font-size: 10.5px; font-weight: 600; color: rgba(255,255,255,0.82); margin-top: 3px; line-height: 1.3; }
+.page-action-btn .pab-chevron { font-size: 17px; opacity: 0.75; flex-shrink: 0; }
 
 .compte-person-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .compte-person-card { background: #11141f; border: 1px solid rgba(var(--accent-rgb),0.28); border-radius: 14px; padding: 10px 12px; width: 100px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; cursor: pointer; }

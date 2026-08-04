@@ -43,7 +43,7 @@ function renderPosteCard(postes, unwrapped) {
       <button class="btn secondary poste-inline-btn" id="profil-poste-add-submit">Ajouter</button>
     </div>`;
   } else if (remaining.length > 0) {
-    html += `<button class="add-toggle" id="profil-poste-add-toggle" style="margin-top:4px;">+ Ajouter un poste</button>`;
+    html += `<button class="add-toggle compact" id="profil-poste-add-toggle" style="margin-top:4px;">+ Ajouter</button>`;
   }
 
   if (unwrapped) return html;
@@ -125,6 +125,20 @@ function renderProfilPage() {
   let html = `<div class="page-title">Mon profil joueur</div>`;
   html += `<div class="page-sub">${nomComplet ? escapeHtml(nomComplet) : session.nom}</div>`;
 
+  // Accès Admin à la gestion des comptes — placé tout en haut (avant la photo) pour être vu
+  // immédiatement : c'est une action d'administration qu'on vient chercher, pas une info de
+  // profil qu'on découvre en faisant défiler. Module du coffret initial, voir comptes.js.
+  if (hasRole("Admin")) {
+    html += `<button type="button" class="page-action-btn" data-goto-page="gestion-comptes">
+      <span class="pab-icon">⚙️</span>
+      <span class="pab-text">
+        <span class="pab-title">Gestion des comptes</span>
+        <span class="pab-sub">Créer et consulter les comptes du club</span>
+      </span>
+      <span class="pab-chevron">›</span>
+    </button>`;
+  }
+
   // Photo
   html += `<div class="card"><div class="profil-photo-zone">
     <div class="profil-photo-frame">${photoUrl ? `<img src="${escapeHtml(photoUrl)}" alt="Photo de ${escapeHtml(session.nom)}"/>` : getInitials(session.nom)}</div>
@@ -164,12 +178,6 @@ function renderProfilPage() {
     </div>
     ${canEditPoste ? `<div class="card" style="flex:1; min-width:0;">${renderPosteCard(postes, true)}</div>` : ""}
   </div>`;
-
-  // Gestion des comptes (coffret initial, pas un module payant) : l'Admin crée/consulte tous les
-  // comptes du club depuis un nouvel onglet dédié — voir comptes.js.
-  if (hasRole("Admin")) {
-    html += `<button class="add-toggle" data-goto-page="gestion-comptes">⚙️ Gestion des comptes</button>`;
-  }
 
   html += EMAIL_REMINDER_UI_VISIBLE ? renderEmailCard(myRow) : "";
 
