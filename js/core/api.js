@@ -69,11 +69,19 @@ async function fetchAll() {
   }
 }
 
+// 60s (et non 10s comme avant) : chaque sondage consomme du quota Google Apps Script, limité à
+// ~90 min d'exécution par jour et PARTAGÉ entre toutes les apps du même compte Google — à 10s,
+// quelques utilisateurs connectés en même temps suffisaient à l'épuiser, ce qui faisait basculer
+// l'appli en "Hors ligne" sans raison apparente. Ce délai ne concerne QUE la découverte des
+// changements faits par quelqu'un d'autre pendant qu'on regarde l'écran sans y toucher : ses
+// propres actions restent instantanées (toutes les écritures affichent le résultat avant même
+// l'appel réseau), et un retour sur l'appli ou un tirer-pour-rafraîchir resynchronise tout de
+// suite (voir visibilitychange ci-dessous et le pull-to-refresh dans core/utils.js).
 function startPolling() {
   fetchAll();
   setInterval(() => {
     if (document.visibilityState === "visible") fetchAll();
-  }, 10000);
+  }, 60000);
   // Dès qu'on revient sur l'appli (changement d'onglet, réveil du téléphone), on rafraîchit
   // tout de suite plutôt que d'attendre le prochain cycle — évite la sensation de données figées.
   document.addEventListener("visibilitychange", () => {
