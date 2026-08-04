@@ -294,6 +294,37 @@ function api_setEmail(ss, e) {
   return jsonOut({ ok: false, error: "not_found" });
 }
 
+// Crée un nouveau compte (nouvelle ligne Comptes), code laissé vide comme les comptes créés par
+// setupComptes — la personne choisit son propre code à sa première connexion (même flux que les
+// comptes existants, voir api_accountStatus/api_setCode). Deux cas d'usage :
+// - un Coach qui ajoute un joueur dans SA PROPRE équipe (auto-service, page Profil) ;
+// - l'Admin qui crée n'importe quel compte (Coach, Bénévole, Salarié, Admin, Parent, Joueur)
+//   depuis "Gestion des comptes".
+function api_addCompte(ss, e) {
+  const callerRole = checkAuth(ss, e.parameter.authNom, e.parameter.authCode);
+  if (!callerRole) return jsonOut({ ok: false, error: "auth" });
+
+  const nom = String(e.parameter.nom || "").trim();
+  const newRole = String(e.parameter.role || "").trim();
+  const equipe = String(e.parameter.equipe || "").trim() || "Toutes";
+  if (!nom || !newRole) return jsonOut({ ok: false, error: "missing" });
+
+  const isAdmin = hasRole(callerRole, "Admin");
+  const isCoachAddingJoueur = hasRole(callerRole, "Coach") && newRole === "Joueur"
+    && equipesForRole(ss, e.parameter.authNom, e.parameter.authCode, "Coach").indexOf(equipe) !== -1;
+  if (!isAdmin && !isCoachAddingJoueur) return jsonOut({ ok: false, error: "forbidden" });
+
+  const sheet = ss.getSheetByName("Comptes");
+  ensureComptesSchema(sheet);
+  const data = sheet.getDataRange().getValues();
+  if (data.slice(1).some(row => String(row[COL_NOM]).trim() === nom)) {
+    return jsonOut({ ok: false, error: "already_exists" });
+  }
+  sheet.appendRow([nom, "", `${newRole}:${equipe}`, "", "", "", "", ""]);
+  sheet.getRange(sheet.getLastRow(), COL_CODE + 1).setNumberFormat("@");
+  return jsonOut({ ok: true });
+}
+
 // Enregistre le jeton FCM (notifications push) de l'appareil de la personne connectée, dans sa
 // propre ligne de la feuille Comptes (colonne PushSubIds). Un seul jeton par compte pour
 // l'instant (le dernier appareil qui active les notifications remplace le précédent) — pas

@@ -7,7 +7,7 @@
 const SESSION_KEY = "balancier-session"; // {nom, role, code, equipe}
 const APP_VERSION_KEY = "balancier-app-version";
 const LAST_USER_KEY = "balancier-last-user"; // simple mémorisation du dernier nom connecté sur cet appareil (pas le code)
-const APP_VERSION = "2026-08-03-8"; // À incrémenter à chaque mise à jour déployée
+const APP_VERSION = "2026-08-04-1"; // À incrémenter à chaque mise à jour déployée
 const SEASON_START = new Date(2026, 8, 1);  // 1er septembre 2026
 const SEASON_END = new Date(2027, 5, 30);   // 30 juin 2027
 
@@ -191,7 +191,7 @@ function parsePresenceEvenements(rows) {
 // l'appli "bloquait" après une création de créneau, sans erreur : il fallait recharger pour
 // voir le résultat).
 function isFormOpen() {
-  return !!window.__compositionDragActive || !!window.__showAddEvent || !!window.__editingEvenementId || !!window.__editingPaiementId || !!window.__showAddPaiement || !!window.__showChangeCode || !!window.__showGenerateTrainings || !!window.__profilPosteAdding || (window.__profilPosteEditIndex !== null && window.__profilPosteEditIndex !== undefined) || !!window.__showAddActualite || !!window.__cnEditPlayer || !!window.__showSalariesAdd || !!window.__salariesPreviewFile || !!window.__salariesUploading || !!window.__profilEmailEditing || currentPage === "support" || !!window.__showAddOsteoSlot || !!window.__osteoReassignId || !!window.__osteoReserveSlotId;
+  return !!window.__compositionDragActive || !!window.__showAddEvent || !!window.__editingEvenementId || !!window.__editingPaiementId || !!window.__showAddPaiement || !!window.__showChangeCode || !!window.__showGenerateTrainings || !!window.__profilPosteAdding || (window.__profilPosteEditIndex !== null && window.__profilPosteEditIndex !== undefined) || !!window.__showAddActualite || !!window.__cnEditPlayer || !!window.__showSalariesAdd || !!window.__salariesPreviewFile || !!window.__salariesUploading || !!window.__profilEmailEditing || currentPage === "support" || !!window.__showAddOsteoSlot || !!window.__osteoReassignId || !!window.__osteoReserveSlotId || !!window.__showAddCompte || !!window.__showAjouterJoueurs;
 }
 
 // Détection générique (pas de liste à maintenir à la main comme isFormOpen ci-dessus) : si le

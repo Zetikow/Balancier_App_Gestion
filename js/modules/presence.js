@@ -226,7 +226,6 @@ function renderPresencePage() {
     past.slice(0, 12).forEach(ev => { html += renderPresenceEventCard(ev, true, activeTeam); });
   }
 
-  html += renderPresenceDetailModal();
   html += renderPresenceRosterSheet(activeTeam);
 
   return html;

@@ -26,6 +26,7 @@ function attachEvents() {
   attachPaiementsEvents();
   attachGalerieEvents();
   attachProfilEvents();
+  attachComptesEvents();
   attachSupportEvents();
   animateFillBars();
 }

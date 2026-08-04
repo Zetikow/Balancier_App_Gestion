@@ -766,6 +766,7 @@ function render() {
   else if (currentPage === "guide") html += renderGuidePage();
   else if (currentPage === "support") html += renderSupportPage();
   else if (currentPage === "osteo") html += renderOsteoPage();
+  else if (currentPage === "gestion-comptes") html += renderGestionComptesPage();
 
   // Fiche événement (bottom sheet) : ajoutée en dehors du switch par page ci-dessus pour
   // pouvoir s'ouvrir depuis n'importe quelle page (Accueil, Agenda...) — voir
@@ -782,6 +783,13 @@ function render() {
   // il vivait avant), il faut que l'éditeur puisse s'ouvrir peu importe la page active.
   if (window.__compositionMatchId) html += renderCompositionEditor(window.__compositionMatchId);
   if (window.__compositionViewMatchId) html += renderCompositionPlayerView(window.__compositionViewMatchId);
+
+  // Détail présence d'une personne (bottom sheet) : ouvert depuis la page Présence (moyenne
+  // d'équipe) OU depuis "Gestion des comptes" (carte d'une personne) — voir
+  // renderPresenceDetailModal (presence.js) et window.__presenceDetailFor.
+  if (window.__presenceDetailFor) html += renderPresenceDetailModal();
+  // "Ajouter mes joueurs" (auto-service Coach, bouton sur Profil) — voir comptes.js.
+  if (window.__showAjouterJoueurs) html += renderAjouterJoueursSheet();
 
   html += `<div class="bottom-nav"><div class="nav-pill" id="nav-pill"></div>`;
   html += mainTabs.map(t => {

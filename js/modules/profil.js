@@ -165,6 +165,12 @@ function renderProfilPage() {
     ${canEditPoste ? `<div class="card" style="flex:1; min-width:0;">${renderPosteCard(postes, true)}</div>` : ""}
   </div>`;
 
+  // Gestion des comptes (coffret initial, pas un module payant) : l'Admin crée/consulte tous les
+  // comptes du club depuis un nouvel onglet dédié — voir comptes.js.
+  if (hasRole("Admin")) {
+    html += `<button class="add-toggle" data-goto-page="gestion-comptes">⚙️ Gestion des comptes</button>`;
+  }
+
   html += EMAIL_REMINDER_UI_VISIBLE ? renderEmailCard(myRow) : "";
 
   if (showVueToggle) {
@@ -193,6 +199,9 @@ function renderProfilPage() {
     const visible = showAll ? mesJoueurs : mesJoueurs.slice(0, 4);
     const bruleFor = chosenCoachTeam === "SM1" ? bruleMatchesForSM1 : (chosenCoachTeam === "U17M1" ? bruleMatchesForU17M1 : null);
     const bruleMax = chosenCoachTeam === "SM1" ? BRULAGE_MAX_MATCHES_SM1 : (chosenCoachTeam === "U17M1" ? BRULAGE_MAX_MATCHES_U17M1 : 0);
+    // Auto-service : chaque coach ajoute lui-même ses joueurs (compte créé avec code vide, choisi
+    // à la première connexion) sans dépendre de l'Admin — voir comptes.js.
+    html += `<button class="add-toggle" data-open-ajouter-joueurs="${escapeHtml(chosenCoachTeam)}">+ Ajouter mes joueurs</button>`;
     html += `<div class="card">
       <div class="section-h">Mes joueurs (${mesJoueurs.length})</div>
       ${mesJoueurs.length === 0 ? `<div class="muted">Aucun joueur trouvé pour cette équipe.</div>` : visible.map(j => {
